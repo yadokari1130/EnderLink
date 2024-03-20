@@ -2,8 +2,7 @@ import { join } from 'path';
 import { app, BrowserWindow, dialog, ipcMain, safeStorage } from 'electron';
 import express from 'express';
 import ElectronStore from "electron-store";
-import ngrok, { Listener } from "@ngrok/ngrok"
-import { ar } from "vuetify/locale";
+import {autoUpdater} from "electron-updater";
 
 interface StoreType {
     access_token: Buffer | undefined,
@@ -54,6 +53,32 @@ function createWindow() {
     //     join(__dirname, '../../index.html')
     // );
 }
+
+autoUpdater.checkForUpdates();
+
+autoUpdater.on("update-downloaded", (info) => {
+    const dialogOpts: {
+        type: "info",
+        buttons: string[],
+        message: string,
+        detail: string
+    } = {
+        type: "info",
+        buttons: ["再起動", "後で"],
+        message: "アップデート",
+        detail: "新しいバージョンが利用可能です。再起動でアップデートが適用されます"
+    }
+
+    dialog.showMessageBox(mainWindow, dialogOpts).then((returnValue) => {
+        if (returnValue.response === 0) {
+            autoUpdater.quitAndInstall()
+        }
+    })
+
+    autoUpdater.on("error", error => {
+        console.log(error);
+    })
+})
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.

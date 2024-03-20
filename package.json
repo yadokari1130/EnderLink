@@ -12,7 +12,8 @@
     "watch": "tsc -w",
     "lint": "eslint -c .eslintrc --ext .ts ./src",
     "app:dev": "tsc && concurrently vite \" electron .\" \"tsc -w\"",
-    "app:build": "npm run vite:build && tsc && electron-builder -wl",
+    "app:build": "npm run vite:build && tsc && electron-builder --win --x64 --publish never",
+    "app:publish": "npm run vite:build && tsc && electron-builder --win --x64 --publish always",
     "app:preview": "npm run vite:build && tsc && electron ."
   },
   "build": {
@@ -32,7 +33,12 @@
           "target": "nsis",
           "arch": [
             "x64"
-          ]
+          ],
+          "publish": {
+            "provider": "github",
+            "owner": "yadokari1130",
+            "repository": "EnderLink"
+          }
         }
       ],
       "artifactName": "${productName}_${version}.${ext}"
