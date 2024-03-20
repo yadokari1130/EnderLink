@@ -441,7 +441,7 @@ export default defineComponent({
 
   <div v-if="serverSettingsStore.serverData" class="mt-8">
     <div class="d-flex flex-row align-center">
-      <v-img rounded inline class="mr-4" :src="icon ? `data:image/png;base64,${icon}` : './pack.png'" width="128px" height="128px"></v-img>
+      <v-img rounded inline class="mr-4" :src="icon ? `data:image/png;base64,${icon}` : 'https://raw.githubusercontent.com/yadokari1130/EnderLink/master/public/pack.png'" width="128px" height="128px"></v-img>
       <h2>サーバー名：{{serverSettingsStore.serverData.name}}</h2>
     </div>
 

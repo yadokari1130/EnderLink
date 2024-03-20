@@ -23,7 +23,7 @@ export default defineComponent({
 
   <h2 class="mt-16 ma-4">リンク</h2>
   <div class="border rounded pa-4">
-    <h3 @click="openExternal('https://google.com')" class="link">
+    <h3 @click="openExternal('https://github.com/yadokari1130/EnderLink')" class="link">
       使い方
       <v-icon>mdi-open-in-new</v-icon>
     </h3>
@@ -35,8 +35,8 @@ export default defineComponent({
       Twitter: Y4D0K4R1
       <v-icon>mdi-open-in-new</v-icon>
     </h3>
-    <h3 @click="openExternal('https://github.com')" class="link">
-      GitHub
+    <h3 @click="openExternal('https://github.com/yadokari1130/EnderLink/issues')" class="link">
+      GitHub Issue
       <v-icon>mdi-open-in-new</v-icon>
     </h3>
   </div>

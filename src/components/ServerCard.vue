@@ -71,7 +71,7 @@ export default defineComponent({
 <v-card width="600px" elevation="4">
   <v-card-title>
     <div class="d-flex flex-row align-center">
-      <v-img rounded inline :src="icon ? `data:image/png;base64,${icon}` : './pack.png'" width="128px" class="ma-2 mr-4"/>
+      <v-img rounded inline :src="icon ? `data:image/png;base64,${icon}` : 'https://raw.githubusercontent.com/yadokari1130/EnderLink/master/public/pack.png'" width="128px" class="ma-2 mr-4"/>
       {{serverData.name}}
     </div>
   </v-card-title>

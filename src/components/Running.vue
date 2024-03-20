@@ -59,7 +59,7 @@ export default defineComponent({
 <template>
   <div v-if="runningStore.serverData">
     <v-row class="d-flex flex-row align-center ma-4 ml-0">
-      <v-img rounded inline :src="runningStore.icon ? `data:image/png;base64,${runningStore.icon}` : './pack.png'" width="64px" class="mr-4 ml-0"/>
+      <v-img rounded inline :src="runningStore.icon ? `data:image/png;base64,${runningStore.icon}` : 'https://raw.githubusercontent.com/yadokari1130/EnderLink/master/public/pack.png'" width="64px" class="mr-4 ml-0"/>
       <h1>{{runningStore.serverData.name}}</h1>
     </v-row>
 
