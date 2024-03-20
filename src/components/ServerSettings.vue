@@ -375,6 +375,11 @@ export default defineComponent({
     async run() {
       if (this.runningStore.isRunning) return
 
+      if (!this.serverSettingsStore.serverData.command) {
+        this.setError("起動コマンドが設定されていません")
+        return
+      }
+
       this.setOverlay("サーバー起動中")
 
       let icon = null

@@ -105,7 +105,7 @@ contextBridge.exposeInMainWorld("git", {
     await git.raw("switch", "-c", "main")
     await git.addConfig("user.email", email)
     await git.addConfig("user.name", username)
-    await git.addConfig("core.sshCommand", `ssh -i ${join(await ipcRenderer.invoke("file:getUserDataPath"), "ssh", "id_ed25519")} -o IdentitiesOnly=true`)
+    await git.addConfig("core.sshCommand", `ssh -i ${join(await ipcRenderer.invoke("file:getUserDataPath"), "ssh", "id_ed25519").replace(/\\/g, "\\\\")} -o IdentitiesOnly=true`)
     await git.addConfig("pull.rebase", "false")
     await git.addRemote("origin", origin)
   },
@@ -131,12 +131,12 @@ contextBridge.exposeInMainWorld("git", {
     await git.raw("push", "-f", "origin", "main")
   },
   clone: async (path: string, repoPath: string, url: string, email: string, username: string) => {
-    let git = simpleGit(path, {config: [`core.sshCommand=ssh -i ${join(await ipcRenderer.invoke("file:getUserDataPath"), "ssh", "id_ed25519")} -o IdentitiesOnly=true`]})
+    let git = simpleGit(path, {config: [`core.sshCommand=ssh -i ${join(await ipcRenderer.invoke("file:getUserDataPath"), "ssh", "id_ed25519").replace(/\\/g, "\\\\")} -o IdentitiesOnly=true`]})
     await git.clone(url)
     git = simpleGit(repoPath)
     await git.addConfig("user.email", email)
     await git.addConfig("user.name", username)
-    await git.addConfig("core.sshCommand", `ssh -i ${join(await ipcRenderer.invoke("file:getUserDataPath"), "ssh", "id_ed25519")} -o IdentitiesOnly=true`)
+    await git.addConfig("core.sshCommand", `ssh -i ${join(await ipcRenderer.invoke("file:getUserDataPath"), "ssh", "id_ed25519").replace(/\\/g, "\\\\")} -o IdentitiesOnly=true`)
   },
   log: async (path: string) => {
     let git = simpleGit(path)

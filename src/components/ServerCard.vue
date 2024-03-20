@@ -40,6 +40,11 @@ export default defineComponent({
     async run() {
       if (this.runningStore.isRunning) return
 
+      if (!this.serverData.command) {
+        this.$emit("setError", "起動コマンドが設定されていません")
+        return
+      }
+
       this.$emit("setOverlay", "サーバー起動中")
 
       const result = await this.runningStore.run(this.serverData, this.icon, window)

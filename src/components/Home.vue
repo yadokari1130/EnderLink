@@ -382,6 +382,7 @@ export default defineComponent({
         <v-btn
             variant="text"
             @click="() => {dialog = false}"
+            size="large"
         >閉じる</v-btn>
         <v-btn
             variant="text"

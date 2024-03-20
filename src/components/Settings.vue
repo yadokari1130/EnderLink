@@ -30,9 +30,7 @@ export default defineComponent({
         window.file.mkdir(sshDir)
         window.file.rm(await window.file.getUserDataPath("ssh", "id_ed25519"))
         window.file.rm(await window.file.getUserDataPath("ssh", "id_ed25519.pub"))
-        window.command.execSync(`
-         cd ${sshDir} &&
-         ssh-keygen -t ed25519 -f id_ed25519 -N ""`)
+        window.command.execSync(`cd ${sshDir} && ssh-keygen -t ed25519 -f id_ed25519 -N ""`)
       }
       catch (error) {
         console.log(error)
@@ -43,7 +41,7 @@ export default defineComponent({
 
       try {
         await this.githubStore.octokit.rest.users.createPublicSshKeyForAuthenticatedUser({
-          title: `shared_minecraft_server_${new Date().getTime()}`,
+          title: `enderlink_${new Date().getTime()}`,
           key: window.file.load(await window.file.getUserDataPath("ssh", "id_ed25519.pub"), "utf-8")
         })
       }
@@ -54,6 +52,7 @@ export default defineComponent({
         return
       }
 
+      this.setSnackbar("SSHキーを登録しました")
       this.registeringSSH = false
     },
     openExternal(url: string) {
@@ -61,20 +60,28 @@ export default defineComponent({
     },
     save() {
       this.ngrokStore.save(window)
-    }
+    },
+    setSnackbar(message: string) {
+      this.snackbar = true
+      this.snackbarMessage = message
+    },
   },
   data: (): {
     errorMessage: string,
     errorSnackbar: boolean,
     githubStore: any,
     registeringSSH: boolean,
-    ngrokStore: any
+    ngrokStore: any,
+    snackbar: boolean,
+    snackbarMessage: string
   } => ({
     errorMessage: "",
     errorSnackbar: false,
     githubStore: useGitHubStore(),
     registeringSSH: false,
-    ngrokStore: useNgrokStore()
+    ngrokStore: useNgrokStore(),
+    snackbar: false,
+    snackbarMessage: ""
   }),
   async created() {
     await this.githubStore.fetchData()
@@ -187,6 +194,22 @@ export default defineComponent({
       <v-btn
           variant="text"
           @click="errorSnackbar = false"
+      >
+        閉じる
+      </v-btn>
+    </template>
+  </v-snackbar>
+
+  <v-snackbar
+      v-model="snackbar"
+      timeout="4000"
+      multi-line
+  >
+    <div style="white-space: pre-wrap;" v-text="snackbarMessage"/>
+    <template v-slot:actions>
+      <v-btn
+          variant="text"
+          @click="snackbar = false"
       >
         閉じる
       </v-btn>
