@@ -37,7 +37,7 @@
           "publish": {
             "provider": "github",
             "owner": "yadokari1130",
-            "repository": "EnderLink"
+            "repo": "EnderLink"
           }
         }
       ],
