@@ -54,9 +54,7 @@ function createWindow() {
     // );
 }
 
-autoUpdater.checkForUpdates();
-
-autoUpdater.on("update-downloaded", (info) => {
+autoUpdater.on("update-downloaded", ({ version, files, path, sha512, releaseName, releaseNotes, releaseDate }) => {
     const dialogOpts: {
         type: "info",
         buttons: string[],
@@ -65,8 +63,8 @@ autoUpdater.on("update-downloaded", (info) => {
     } = {
         type: "info",
         buttons: ["再起動", "後で"],
-        message: "アップデート",
-        detail: "新しいバージョンが利用可能です。再起動でアップデートが適用されます"
+        message: "新しいバージョンが利用可能です。再起動でアップデートが適用されます。",
+        detail: `${app.getName()} ${version} ${releaseDate}`
     }
 
     dialog.showMessageBox(mainWindow, dialogOpts).then((returnValue) => {
@@ -103,6 +101,10 @@ app.whenReady().then(() => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })
 });
+
+app.on("ready", () => {
+    autoUpdater.checkForUpdatesAndNotify();
+})
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
