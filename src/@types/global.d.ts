@@ -20,6 +20,7 @@ export interface IFile {
     exists: (filePath: string) => boolean
     join: (...paths: string[]) => string
     selectPath: () => Promise<any>
+    selectFilePath: (defaultPath: string) => Promise<any>
     url: () => string
     getUserDataPath: (...paths: string[]) => Promise<string>
     mkdir: (filePath: string) => void
@@ -47,6 +48,7 @@ export interface INgrok {
 export interface IShell {
     openExternal: (url: string) => Promise<void>
     showItemInFolder: (path: string) => void
+    getPlatform: () => "aix" | "android" | "darwin" | "freebsd" | "haiku" | "linux" | "openbsd" | "sunos" | "win32" | "cygwin" | "netbsd"
 }
 
 export interface IServer {

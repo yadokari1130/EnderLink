@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld("file", {
   exists: (filePath: string) => fs.existsSync(filePath),
   join: (...paths: string[]) => join(...paths),
   selectPath: () => ipcRenderer.invoke("dialog:selectPath"),
+  selectFilePath: (defaultPath: string) => ipcRenderer.invoke("dialog:selectFilePath", {defaultPath: defaultPath}),
   url: () => window.location.href,
   getUserDataPath: async (...paths: string[]) => join(await ipcRenderer.invoke("file:getUserDataPath"), ...paths),
   mkdir: (filePath: string) => {
@@ -68,7 +69,8 @@ contextBridge.exposeInMainWorld("ngrok", {
 
 contextBridge.exposeInMainWorld("shell", {
   openExternal: (url: string) => shell.openExternal(url),
-  showItemInFolder: (path: string) => shell.showItemInFolder(path)
+  showItemInFolder: (path: string) => shell.showItemInFolder(path),
+  getPlatform: () => process.platform
 })
 
 contextBridge.exposeInMainWorld("server", {
@@ -94,7 +96,7 @@ contextBridge.exposeInMainWorld("command", {
   },
   kill: () => {
     proc?.kill(1)
-  }
+  },
 })
 
 contextBridge.exposeInMainWorld("git", {

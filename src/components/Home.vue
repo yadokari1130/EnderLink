@@ -4,6 +4,7 @@ import { useGitHubStore } from "../store/github";
 import { defineComponent } from "vue";
 import {IFile} from "../@types/global";
 import { useServerSettingsStore } from "../store/server-settings";
+import { no } from "vuetify/locale";
 
 export default defineComponent({
   name: "Home",
@@ -203,6 +204,30 @@ export default defineComponent({
         if (repo.length === 0) break
         repo.forEach(r => this.repositories.push(r))
       }
+    },
+    async importCommand() {
+      let script
+      try {
+        const paths = (await window.file.selectFilePath(this.path))
+        if (!paths) return
+        script = window.file.load(paths[0], "utf-8")
+      }
+      catch (error) {
+        console.log(error)
+        this.setError("ファイルの読み込みに失敗しました")
+        return
+      }
+
+      let notFound = true
+      let lines = script.split("\n")
+      for (let l of lines) {
+        if (l.startsWith("java")) {
+          notFound = false
+          this.command = l
+        }
+      }
+
+      if (notFound) this.setError("起動コマンドが見つかりませんでした")
     }
   }
 })
@@ -234,14 +259,11 @@ export default defineComponent({
   <v-layout-item model-value position="bottom" class="text-end" size="120">
     <div class="ma-4 mx-12">
       <v-tooltip
-          location="top"
-          :disabled="githubStore.userData && githubStore.existsSSHKey"
+          location="left"
+          :disabled="githubStore.userData && githubStore.existsSSHKey && githubStore.gitVersion"
       >
         <template v-slot:activator="{ props }">
-          <v-btn
-              icon
-              v-bind="props"
-          >
+          <div class="d-inline-block" v-bind="props">
             <v-btn
                 icon="mdi-plus"
                 size="x-large"
@@ -254,19 +276,19 @@ export default defineComponent({
                   this.server = null
                   this.command = ''
                 }"
-                :disabled="!githubStore.userData || !githubStore.existsSSHKey"
+                :disabled="!githubStore.userData || !githubStore.existsSSHKey || !githubStore.gitVersion"
             />
-          </v-btn>
+          </div>
         </template>
         <p>サーバーを追加するためには基本設定画面から</p>
-        <p>GitHubにログインし、SSHキーを追加してください</p>
+        <p>Gitのインストール、GitHubにログイン、SSHキーの追加を行ってください</p>
       </v-tooltip>
     </div>
   </v-layout-item>
 
   <v-dialog
       v-model="dialog"
-      width="800px"
+      width="1000px"
       transition="slide-y-transition"
   >
     <v-card title="サーバーを追加">
@@ -325,7 +347,23 @@ export default defineComponent({
                     variant="outlined"
                     label="起動コマンド"
                     v-model="command"
-                    placeholder="例：java -jar server.jar nogui"/>
+                    placeholder="例：java -jar server.jar nogui">
+                  <template v-slot:append>
+                    <v-tooltip location="bottom">
+                      <template v-slot:activator="{props}">
+                        <v-btn
+                            size="large"
+                            color="primary"
+                            style="text-transform: none"
+                            v-bind="props"
+                            @click="importCommand"
+                            variant="text"
+                        >batからインポート</v-btn>
+                      </template>
+                      <p>シェルスクリプトからもインポートすることができます</p>
+                    </v-tooltip>
+                  </template>
+                </v-text-field>
               </v-col>
             </v-row>
           </v-window-item>

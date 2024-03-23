@@ -16,14 +16,16 @@ export const useGitHubStore = defineStore("github", {
         accessToken: null,
         existsSSHKey: false,
         invitedRepositories: null,
-        removeInvitations: []
+        removeInvitations: [],
+        gitVersion: null
     } as {
         octokit: Octokit | null,
         userData: UserData | null,
         accessToken: string | null,
         existsSSHKey: boolean,
-        invitedRepositories: any
-        removeInvitations: Array<number>
+        invitedRepositories: any,
+        removeInvitations: Array<number>,
+        gitVersion: string | null
     }),
     actions: {
         async logout(window: Window) {
@@ -81,6 +83,13 @@ export const useGitHubStore = defineStore("github", {
             if (accessToken) this.octokit = new Octokit({auth: accessToken})
             else this.octokit = null
             this.existsSSHKey = window.file.exists(await window.file.getUserDataPath("ssh", "id_ed25519"))
+            try {
+                this.gitVersion = window.command.execSync("git --version")
+            }
+            catch (error) {
+                console.log(error)
+                this.gitVersion = null
+            }
         }
     }
 });

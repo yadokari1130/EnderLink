@@ -4,6 +4,8 @@ import axios from "axios";
 import { useGitHubStore } from "../store/github";
 import {IShell, IFile, IToken} from "../@types/global";
 import { useNgrokStore } from "../store/ngrok";
+import { ipcRenderer } from "electron";
+import { useRunningStore } from "../store/running";
 
 export default defineComponent({
   name: "Settings",
@@ -52,8 +54,23 @@ export default defineComponent({
         return
       }
 
-      this.setSnackbar("SSHキーを登録しました")
+      try {
+        if (this.isWin) {
+          let shPath = await window.file.getUserDataPath("scripts", "hostbasedAuth.bat")
+          await window.shell.openExternal(shPath)
+        }
+        else {
+          let shPath = await window.file.getUserDataPath("scripts", "hostbasedAuth.sh")
+          await window.shell.showItemInFolder(shPath)
+        }
+      }
+      catch (error) {
+        console.log(error)
+        this.setError("ファイルのオープンに失敗しました")
+      }
+
       this.registeringSSH = false
+      this.sshSnackbar = true
     },
     openExternal(url: string) {
       window.shell.openExternal(url)
@@ -73,7 +90,10 @@ export default defineComponent({
     registeringSSH: boolean,
     ngrokStore: any,
     snackbar: boolean,
-    snackbarMessage: string
+    snackbarMessage: string,
+    runningStore: any,
+    isWin: boolean,
+    sshSnackbar: boolean
   } => ({
     errorMessage: "",
     errorSnackbar: false,
@@ -81,11 +101,15 @@ export default defineComponent({
     registeringSSH: false,
     ngrokStore: useNgrokStore(),
     snackbar: false,
-    snackbarMessage: ""
+    snackbarMessage: "",
+    runningStore: useRunningStore(),
+    isWin: false,
+    sshSnackbar: false
   }),
   async created() {
     await this.githubStore.fetchData()
     await this.ngrokStore.fetchData(window)
+    this.isWin = window.shell.getPlatform() === "win32"
   }
 })
 </script>
@@ -98,7 +122,7 @@ export default defineComponent({
   </v-row>
 
   <div v-if="githubStore.userData">
-    <h2 class="ma-4">ログイン中のアカウント</h2>
+    <h2 class="ma-4">GitHub</h2>
     <div class="border rounded pa-4">
       <div class="d-flex flex-row align-center">
         <v-img inline :src="githubStore.userData.avatar_url" width="128px" rounded class="mr-4"/>
@@ -108,7 +132,7 @@ export default defineComponent({
         </div>
       </div>
 
-      <v-row class="mt-8" justify="space-between">
+      <v-row justify="space-between" class="mt-8">
         <v-col cols="4">
           <v-tooltip location="bottom">
             <template v-slot:activator="{props}">
@@ -128,6 +152,23 @@ export default defineComponent({
           <v-btn variant="outlined" color="red" @click="logout" size="large" width="100%">ログアウト</v-btn>
         </v-col>
       </v-row>
+
+      <h3 class="mt-4 mb-2">Git：{{githubStore.gitVersion ? `インストール済み (${githubStore.gitVersion})` : "未インストール"}}</h3>
+      <v-tooltip location="bottom">
+        <template v-slot:activator="{props}">
+          <v-btn
+              width="100%"
+              size="large"
+              color="primary"
+              v-bind="props"
+              append-icon="mdi-open-in-new"
+              @click="openExternal('https://git-scm.com/downloads')"
+          >
+            Gitをインストール
+          </v-btn>
+        </template>
+        <p>Gitはデータの管理に必要なアプリです</p>
+      </v-tooltip>
     </div>
   </div>
 
@@ -148,6 +189,7 @@ export default defineComponent({
     </v-tooltip>
   </h2>
   <div class="border rounded pa-4">
+    <h3 class="mb-2">Ngrok：{{ngrokStore.ngrokVersion ? `インストール済み (${ngrokStore.ngrokVersion})` : "未インストール"}}</h3>
     <v-btn
         @click="openExternal('https://ngrok.com/download')"
         size="large"
@@ -210,6 +252,32 @@ export default defineComponent({
       <v-btn
           variant="text"
           @click="snackbar = false"
+      >
+        閉じる
+      </v-btn>
+    </template>
+  </v-snackbar>
+
+  <v-snackbar
+    v-model="sshSnackbar"
+    timeout="-1"
+    multi-line
+  >
+    <div v-if="isWin">
+      <p>SSHキーを登録しました</p>
+      <p>黒いターミナル画面が表示された場合、以下の文字列が出力されていることを確認し、「yes」と入力してエンターを押してください</p>
+      <p>ED25519 key fingerprint is SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU.</p>
+    </div>
+    <div v-else>
+      <p>SSHキーを登録しました</p>
+      <p>開かれたフォルダ内にある「hostbaseAuth.sh」を実行した後、</p>
+      <p>以下の文字列が出力されていることを確認し、「yes」と入力してエンターを押してください</p>
+      <p>ED25519 key fingerprint is SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU.</p>
+    </div>
+    <template v-slot:actions>
+      <v-btn
+          variant="text"
+          @click="sshSnackbar = false"
       >
         閉じる
       </v-btn>

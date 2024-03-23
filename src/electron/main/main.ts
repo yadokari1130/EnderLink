@@ -30,6 +30,13 @@ function handleSelectPath() {
     });
 }
 
+function selectFilePath(defaultPath: string) {
+    return dialog.showOpenDialogSync({
+        title: "ファイルを選択",
+        defaultPath: defaultPath
+    })
+}
+
 function createWindow() {
     // Create the browser window.
     mainWindow = new BrowserWindow({
@@ -38,6 +45,7 @@ function createWindow() {
             nodeIntegration: true,
         },
     });
+    // mainWindow.removeMenu()
     mainWindow.maximize()
 
     // and load the index.html of the app.
@@ -84,6 +92,7 @@ autoUpdater.on("update-downloaded", ({ version, files, path, sha512, releaseName
 app.whenReady().then(() => {
     ipcMain.handle('dialog:openFile', handleFileOpen)
     ipcMain.handle("dialog:selectPath", handleSelectPath)
+    ipcMain.handle("dialog:selectFilePath", (event, args) => selectFilePath(args.defaultPath))
     ipcMain.handle("server:waitCallback", (event, args) => waitCallback(args.url))
     ipcMain.handle("win:focusWin", focusWin)
     ipcMain.handle("file:getUserDataPath", getUserDataPath)

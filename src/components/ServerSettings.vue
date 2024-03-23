@@ -417,6 +417,30 @@ export default defineComponent({
 
       this.status = "#stopping"
       this.setSnackbar("状態を更新しました")
+    },
+    async importCommand() {
+      let script
+      try {
+        const paths = (await window.file.selectFilePath(this.serverSettingsStore.serverData.path))
+        if (!paths) return
+        script = window.file.load(paths[0], "utf-8")
+      }
+      catch (error) {
+        console.log(error)
+        this.setError("ファイルの読み込みに失敗しました")
+        return
+      }
+
+      let notFound = true
+      let lines = script.split("\n")
+      for (let l of lines) {
+        if (l.startsWith("java")) {
+          notFound = false
+          this.command = l
+        }
+      }
+
+      if (notFound) this.setError("起動コマンドが見つかりませんでした")
     }
   },
   computed: {
@@ -538,7 +562,23 @@ export default defineComponent({
               label="起動コマンド"
               v-model="command"
               :hide-details="true"
-              placeholder="例：java -jar server.jar nogui"/>
+              placeholder="例：java -jar server.jar nogui">
+            <template v-slot:append>
+              <v-tooltip location="bottom">
+                <template v-slot:activator="{props}">
+                  <v-btn
+                      size="large"
+                      color="primary"
+                      style="text-transform: none"
+                      v-bind="props"
+                      @click="importCommand"
+                      variant="text"
+                  >batからインポート</v-btn>
+                </template>
+                <p>シェルスクリプトからもインポートすることができます</p>
+              </v-tooltip>
+            </template>
+          </v-text-field>
         </v-col>
       </v-row>
 

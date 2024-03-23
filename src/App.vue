@@ -16,9 +16,21 @@ export default defineComponent({
     this.ngrokStore.fetchData(window)
     await this.githubStore.init(window)
     await this.githubStore.fetchData()
+    await this.ngrokStore.init(window)
 
     await router.push("/")
   },
+  async beforeCreate() {
+    window.file.mkdir(await window.file.getUserDataPath("scripts"))
+    if (window.shell.getPlatform() === "win32") {
+      let shPath = await window.file.getUserDataPath("scripts", "hostbasedAuth.bat")
+      if (!window.file.exists(shPath)) await window.file.save(shPath, "@echo off\nssh -T git@github.com")
+    }
+    else {
+      let shPath = await window.file.getUserDataPath("scripts", "hostbasedAuth.sh")
+      if (!window.file.exists(shPath)) await window.file.save(shPath, "#!/bin/bash\nssh -T git@github.com")
+    }
+  }
 })
 </script>
 
