@@ -266,7 +266,7 @@ export default defineComponent({
     <div v-if="isWin">
       <p>SSHキーを登録しました</p>
       <p>黒いターミナル画面が表示された場合、以下の文字列が出力されていることを確認し、「yes」と入力してエンターを押してください</p>
-      <p>ED25519 key fingerprint is SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU.</p>
+      <p>ECDSA key fingerprint is SHA256:p2QAMXNIC1TJYWeIOttrVc98/R1BUFWu3/LiyKgUfQM.</p>
     </div>
     <div v-else>
       <p>SSHキーを登録しました</p>
