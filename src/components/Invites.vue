@@ -11,8 +11,8 @@ export default defineComponent({
     snackbarMessage: "",
     snackbarColor: undefined
   }),
-  created() {
-    this.githubStore.fetchData()
+  async created() {
+    await this.githubStore.fetchData(window)
   },
   methods: {
     async accept(invitationId: number) {
@@ -32,7 +32,7 @@ export default defineComponent({
       this.snackbarColor = undefined
       this.snackbar = true
 
-      this.githubStore.fetchData()
+      await this.githubStore.fetchData(window)
     },
     async decline(invitationId: number) {
       try {
@@ -51,7 +51,7 @@ export default defineComponent({
       this.snackbarColor = undefined
       this.snackbar = true
 
-      this.githubStore.fetchData()
+      await this.githubStore.fetchData(window)
     }
   }
 })

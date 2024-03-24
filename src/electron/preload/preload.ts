@@ -4,7 +4,7 @@ import { contextBridge, ipcRenderer, shell } from 'electron'
 import * as fs from "fs";
 import { join } from "path";
 import simpleGit from "simple-git";
-import {execSync} from "child_process"
+import {execSync, exec} from "child_process"
 import * as path from "path";
 import * as child_process from "child_process";
 import ngrok, { Listener } from "@ngrok/ngrok";
@@ -83,6 +83,7 @@ contextBridge.exposeInMainWorld("win", {
 
 contextBridge.exposeInMainWorld("command", {
   execSync: (command: string) => execSync(command).toString(),
+  exec: (command: string, onOut: (error: child_process.ExecException | null, stdout: string, stderr: string) => void) => exec(command, onOut),
   spawn: (command: string, path: string, onOut: (data: string) => void, onError: (data: string) => void, onClose: (code: number) => void) => {
     const c = command.split(" ")[0]
     const args = command.split(" ").splice(1)

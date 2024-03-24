@@ -50,7 +50,7 @@ export default defineComponent({
     }
   },
   async created() {
-    await this.githubStore.fetchData()
+    await this.githubStore.fetchData(window)
   },
   methods: {
     setSnackbar(message: string) {
@@ -260,7 +260,7 @@ export default defineComponent({
     <div class="ma-4 mx-12">
       <v-tooltip
           location="left"
-          :disabled="githubStore.userData && githubStore.existsSSHKey && githubStore.gitVersion"
+          :disabled="githubStore.userData && githubStore.availableSSH && !!githubStore.gitVersion"
       >
         <template v-slot:activator="{ props }">
           <div class="d-inline-block" v-bind="props">
@@ -276,7 +276,7 @@ export default defineComponent({
                   this.server = null
                   this.command = ''
                 }"
-                :disabled="!githubStore.userData || !githubStore.existsSSHKey || !githubStore.gitVersion"
+                :disabled="!githubStore.userData || !githubStore.availableSSH || !githubStore.gitVersion"
             />
           </div>
         </template>

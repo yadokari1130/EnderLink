@@ -79,7 +79,7 @@ export default defineComponent({
   <v-card-actions>
     <v-row justify="space-evenly">
       <v-col cols="5">
-        <v-tooltip :disabled="githubStore.userData && githubStore.existsSSHKey && !runningStore.isRunning" location="bottom">
+        <v-tooltip :disabled="githubStore.userData && githubStore.availableSSH && !runningStore.isRunning" location="bottom">
           <template v-slot:activator="{props}">
             <div class="d-inline-block" v-bind="props" style="width: 100%">
               <v-btn
@@ -88,13 +88,19 @@ export default defineComponent({
                   prepend-icon="mdi-play"
                   color="primary"
                   @click="run"
-                  :disabled="!githubStore.userData || !githubStore.existsSSHKey || runningStore.isRunning"
+                  :disabled="!githubStore.userData || !githubStore.availableSSH || runningStore.isRunning"
                   size="large"
               >起動</v-btn>
             </div>
           </template>
-          <p>他のサーバーが起動中です</p>
-          <p>複数のサーバーを同時に起動させることはできません</p>
+          <div v-if="runningStore.isRunning">
+            <p>他のサーバーが起動中です</p>
+            <p>複数のサーバーを同時に起動させることはできません</p>
+          </div>
+          <div v-else>
+            <p>起動できません</p>
+            <p>ネットワーク接続を確認してください</p>
+          </div>
         </v-tooltip>
       </v-col>
       <v-col cols="5">
@@ -107,7 +113,7 @@ export default defineComponent({
               this.serverSettingsStore.serverData = this.serverData
               this.router.push('server-settings')
             }"
-            :disabled="!githubStore.userData || !githubStore.existsSSHKey"
+            :disabled="!githubStore.userData || !githubStore.availableSSH"
             size="large"
         >設定</v-btn>
       </v-col>

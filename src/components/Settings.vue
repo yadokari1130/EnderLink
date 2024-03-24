@@ -107,7 +107,7 @@ export default defineComponent({
     sshSnackbar: false
   }),
   async created() {
-    await this.githubStore.fetchData()
+    await this.githubStore.fetchData(window)
     await this.ngrokStore.fetchData(window)
     this.isWin = window.shell.getPlatform() === "win32"
   }
@@ -198,14 +198,29 @@ export default defineComponent({
         class="mb-4"
         append-icon="mdi-open-in-new"
     >Ngrokをインストールする</v-btn>
-    <v-checkbox hide-details label="Ngrokを使う" @change="save" v-model="ngrokStore.useNgrok" class="mb-4"/>
-    <v-text-field variant="outlined" label="トークン" hide-details v-model="ngrokStore.ngrokToken" @input="save">
+    <v-checkbox
+        hide-details
+        label="Ngrokを使う"
+        @change="save"
+        v-model="ngrokStore.useNgrok"
+        class="mb-4"
+        :disabled="!ngrokStore.ngrokVersion"
+    />
+    <v-text-field
+        variant="outlined"
+        label="トークン"
+        hide-details
+        v-model="ngrokStore.ngrokToken"
+        @input="save"
+        :disabled="!ngrokStore.ngrokVersion"
+    >
       <template v-slot:append>
         <v-btn
             size="large"
             color="primary"
             @click="openExternal('https://dashboard.ngrok.com/get-started/your-authtoken')"
             append-icon="mdi-open-in-new"
+            :disabled="!ngrokStore.ngrokVersion"
         >トークンを取得</v-btn>
       </template>
     </v-text-field>

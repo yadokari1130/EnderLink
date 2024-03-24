@@ -452,7 +452,7 @@ export default defineComponent({
 
       return isChanged
     }
-  }
+  },
 })
 </script>
 

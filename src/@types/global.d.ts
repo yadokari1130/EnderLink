@@ -1,5 +1,7 @@
 import { SimpleGit } from "simple-git";
 import { Listener } from "@ngrok/ngrok";
+import { ChildProcess } from "concurrently/dist/src/command";
+import * as child_process from "child_process";
 
 declare global {
     interface Window {
@@ -61,6 +63,7 @@ export interface IWin {
 
 export interface ICommand {
     execSync: (command: string) => string
+    exec: (command: string, onOut: (error: child_process.ExecException, stdout: string, stderr: string) => void) => ChildProcess
     spawn: (command: string, path: string, onOut: (data: string) => void, onError: (data: string) => void, onClose: (code: number) => void) => void
     write: (command: string) => void
     kill: () => void

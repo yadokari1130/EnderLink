@@ -15,7 +15,7 @@ export default defineComponent({
   async mounted() {
     this.ngrokStore.fetchData(window)
     await this.githubStore.init(window)
-    await this.githubStore.fetchData()
+    await this.githubStore.fetchData(window)
     await this.ngrokStore.init(window)
 
     await router.push("/")

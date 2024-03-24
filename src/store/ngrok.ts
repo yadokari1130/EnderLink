@@ -28,6 +28,11 @@ export const useNgrokStore = defineStore("ngrok", {
                 console.log(error)
                 this.ngrokVersion = null
             }
+
+            if (!this.ngrokVersion) {
+                this.useNgrok = false
+                await this.save(window)
+            }
         }
     }
 });

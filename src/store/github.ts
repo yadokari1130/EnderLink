@@ -14,18 +14,20 @@ export const useGitHubStore = defineStore("github", {
         octokit: null,
         userData: null,
         accessToken: null,
-        existsSSHKey: false,
+        availableSSH: false,
         invitedRepositories: null,
         removeInvitations: [],
-        gitVersion: null
+        gitVersion: null,
+        fingerprint: null
     } as {
         octokit: Octokit | null,
         userData: UserData | null,
         accessToken: string | null,
-        existsSSHKey: boolean,
+        availableSSH: boolean,
         invitedRepositories: any,
         removeInvitations: Array<number>,
-        gitVersion: string | null
+        gitVersion: string | null,
+        fingerprint: string | null
     }),
     actions: {
         async logout(window: Window) {
@@ -61,9 +63,9 @@ export const useGitHubStore = defineStore("github", {
             await window.token.setAccessToken(response.data.access_token)
             this.accessToken = response.data.access_token
             this.octokit = new Octokit({auth: this.accessToken})
-            await this.fetchData()
+            await this.fetchData(window)
         },
-        async fetchData() {
+        async fetchData(window: Window) {
             if (this.octokit) {
                 this.userData = (await this.octokit.rest.users.getAuthenticated()).data
                 const emails = (await this.octokit.request('GET /user/emails', {
@@ -77,12 +79,34 @@ export const useGitHubStore = defineStore("github", {
                 this.invitedRepositories = (await this.octokit.rest.repos.listInvitationsForAuthenticatedUser()).data
                     .filter(i => !this.removeInvitations.includes(i.id))
             }
+            
+            const sshKeyPath = await window.file.getUserDataPath("ssh", "id_ed25519")
+            let fp
+            try {
+                fp = window.command.execSync(`ssh-keygen -lf ${sshKeyPath}`)
+            }
+            catch (error) {
+                this.availableSSH = false
+                return
+            }
+
+            if (fp === this.fingerprint) return
+
+            this.fingerprint = fp
+            this.availableSSH = false
+            window.command.exec(`ssh -i ${sshKeyPath} -T git@github.com -o IdentitiesOnly=true`,
+                (error, stdout, stderr) => {
+                    if (!error) return
+                    console.log(error)
+                    const result = /Hi (.+)! You've successfully authenticated, but GitHub does not provide shell access\./g.exec(stderr + "")
+                    if (result && result[1] === this.userData?.login) this.availableSSH = true
+                    else this.availableSSH = false
+                })
         },
         async init(window: Window) {
             const accessToken = await window.token.getAccessToken()
             if (accessToken) this.octokit = new Octokit({auth: accessToken})
             else this.octokit = null
-            this.existsSSHKey = window.file.exists(await window.file.getUserDataPath("ssh", "id_ed25519"))
             try {
                 this.gitVersion = window.command.execSync("git --version")
             }
