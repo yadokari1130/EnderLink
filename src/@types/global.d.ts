@@ -5,6 +5,7 @@ import * as child_process from "child_process";
 
 declare global {
     interface Window {
+        store: IStore
         file: IFile
         token: IToken
         shell: IShell
@@ -29,6 +30,8 @@ export interface IFile {
     rm: (filePath: string) => void
     resolve: (filePath: string) => string
     rmDir: (dirPath: string) => void
+    basename: (filePath: string) => string
+    dirname: (filePath: string) => string
 }
 
 export interface IToken {
@@ -51,6 +54,7 @@ export interface IShell {
     openExternal: (url: string) => Promise<void>
     showItemInFolder: (path: string) => void
     getPlatform: () => "aix" | "android" | "darwin" | "freebsd" | "haiku" | "linux" | "openbsd" | "sunos" | "win32" | "cygwin" | "netbsd"
+    openPath: (url: string) => Promise<string>
 }
 
 export interface IServer {
@@ -59,6 +63,11 @@ export interface IServer {
 
 export interface IWin {
     focusWin: () => Promise<any>
+}
+
+export interface IStore {
+    get: (key: string) => Promise<string>
+    set: (key: string, value: string) => Promise<void>
 }
 
 export interface ICommand {

@@ -69,8 +69,6 @@ export const useRunningStore = defineStore("running", {
 
             if (this.ngrokStore.useNgrok) {
                 try {
-                    console.log(window.command.execSync("ngrok --version"))
-
                     let port = window.file.load(window.file.join(serverData?.path || "", "server.properties"), "utf-8")
                     let matched = port.match(/server-port=([0-9]+)/)
                     if (!matched || !matched[1]) return "#loadError"

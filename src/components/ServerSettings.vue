@@ -415,6 +415,7 @@ export default defineComponent({
         return
       }
 
+      await this.setCommitLog()
       this.status = "#stopping"
       this.setSnackbar("状態を更新しました")
     },
@@ -976,9 +977,11 @@ export default defineComponent({
       :model-value="overlay"
       class="align-center justify-center"
       persistent
+      opacity="0.7"
   >
     <v-progress-circular
-        color="primary"
+        width="8"
+        color="blue-lighten-2"
         size="200"
         indeterminate
     >

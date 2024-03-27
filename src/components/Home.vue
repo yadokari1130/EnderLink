@@ -295,7 +295,7 @@ export default defineComponent({
       <v-tabs
           v-model="tab"
           align-tabs="center"
-          color="deep-purple-accent-4"
+          color="primary"
       >
         <v-tab :value="1">フォルダを追加</v-tab>
         <v-tab :value="2">GitHubからインポート</v-tab>
@@ -439,9 +439,11 @@ export default defineComponent({
       :model-value="overlay"
       class="align-center justify-center"
       persistent
+      opacity="0.7"
   >
     <v-progress-circular
-        color="primary"
+        width="8"
+        color="blue-lighten-2"
         size="200"
         indeterminate
     >

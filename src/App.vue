@@ -13,10 +13,9 @@ export default defineComponent({
     colors: {"起動中": "green", "終了中": "red", "停止済み": "grey", "エラー": "red"}
   }),
   async mounted() {
-    this.ngrokStore.fetchData(window)
+    await this.ngrokStore.fetchData(window)
     await this.githubStore.init(window)
     await this.githubStore.fetchData(window)
-    await this.ngrokStore.init(window)
 
     await router.push("/")
   },
@@ -48,13 +47,12 @@ export default defineComponent({
             to="/"
             router/>
         <v-list-item
-            prepend-icon="mdi-play"
             title="起動中のサーバー"
             to="/running"
             router>
           <template v-slot:prepend>
             <v-badge :model-value="this.runningStore.status !== 'エラー'" :color="colors[this.runningStore.status]" dot>
-              <v-icon icon="mdi-account-multiple"></v-icon>
+              <v-icon icon="mdi-code-greater-than"></v-icon>
             </v-badge>
           </template>
         </v-list-item>

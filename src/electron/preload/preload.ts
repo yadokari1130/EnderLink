@@ -2,7 +2,7 @@
 // It has the same sandbox as a Chrome extension.
 import { contextBridge, ipcRenderer, shell } from 'electron'
 import * as fs from "fs";
-import { join } from "path";
+import { join, basename, dirname } from "path";
 import simpleGit from "simple-git";
 import {execSync, exec} from "child_process"
 import * as path from "path";
@@ -23,6 +23,11 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 })
 
+contextBridge.exposeInMainWorld("store", {
+  get: (key: string) => ipcRenderer.invoke("store:get", {key: key}),
+  set: (key: string, value: string) => ipcRenderer.invoke("store:set", {key: key, value: value})
+})
+
 contextBridge.exposeInMainWorld("file", {
   save: (filePath: string, text: string) => fs.writeFileSync(filePath, text, { encoding: 'utf-8' }),
   load: (filePath: string, encoding: BufferEncoding) => fs.readFileSync(filePath, {encoding: encoding}),
@@ -41,7 +46,9 @@ contextBridge.exposeInMainWorld("file", {
   rmDir: (dirPath: string) => {
     if (fs.existsSync(dirPath)) fs.rmSync(dirPath, {recursive: true})
   },
-  resolve: (filePath: string) => path.resolve(filePath)
+  resolve: (filePath: string) => path.resolve(filePath),
+  basename: (filePath: string) => basename(filePath),
+  dirname: (filePath: string) => dirname(filePath)
 });
 
 contextBridge.exposeInMainWorld("token", {
@@ -70,7 +77,8 @@ contextBridge.exposeInMainWorld("ngrok", {
 contextBridge.exposeInMainWorld("shell", {
   openExternal: (url: string) => shell.openExternal(url),
   showItemInFolder: (path: string) => shell.showItemInFolder(path),
-  getPlatform: () => process.platform
+  getPlatform: () => process.platform,
+  openPath: (url: string) => shell.openPath(url)
 })
 
 contextBridge.exposeInMainWorld("server", {

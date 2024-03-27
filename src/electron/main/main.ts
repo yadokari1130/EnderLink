@@ -3,6 +3,7 @@ import { app, BrowserWindow, dialog, ipcMain, safeStorage } from 'electron';
 import express from 'express';
 import ElectronStore from "electron-store";
 import {autoUpdater} from "electron-updater";
+import * as http from "http";
 
 interface StoreType {
     access_token: Buffer | undefined,
@@ -11,6 +12,7 @@ interface StoreType {
 }
 
 const store = new ElectronStore<StoreType>()
+let server: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse> | null = null
 
 const isDev = process.env.npm_lifecycle_event === "app:dev";
 let mainWindow: BrowserWindow
@@ -46,7 +48,7 @@ function createWindow() {
         },
     });
     // mainWindow.removeMenu()
-    mainWindow.maximize()
+    if (getStore("windowMaximize") === "true") mainWindow.maximize()
 
     // and load the index.html of the app.
     if (isDev) {
@@ -103,6 +105,8 @@ app.whenReady().then(() => {
     ipcMain.handle("ngrok:setNgrokToken", (event, args) => setNgrokToken(args.token))
     ipcMain.handle("ngrok:getUseNgrok", getUseNgrok)
     ipcMain.handle("ngrok:setUseNgrok", (event, args) => setUseNgrok(args.useNgrok))
+    ipcMain.handle("store:get", (event, args) => getStore(args.key))
+    ipcMain.handle("store:set", (event, args) => setStore(args.key, args.value))
     createWindow()
     app.on('activate', function () {
         // On macOS it's common to re-create a window in the app when the
@@ -124,9 +128,15 @@ app.on('window-all-closed', () => {
     }
 });
 
+app.on("child-process-gone", (event, details) => {
+    console.log(details.reason, details.name, details.exitCode)
+})
+
 async function waitCallback(url: string) {
     const { protocol, hostname, port, pathname } = new URL(url)
     if (protocol !== "http:" || hostname !== "localhost") throw new Error("URL error");
+
+    if (server) return 
 
     return new Promise((resolve, reject) => {
         const app = express();
@@ -135,9 +145,10 @@ async function waitCallback(url: string) {
             res.send('<html><body><h1>この画面を閉じ、アプリに戻って操作を続けてください</h1></body></html>');
             setTimeout(shutdown, 100)
         });
-        const server = app.listen(port);
+        server = app.listen(port);
         const shutdown = (reason: string) => {
-            server.close();
+            server?.close()
+            server = null
             if (reason) reject(new Error(reason));
         };
     });
@@ -183,4 +194,12 @@ function getUseNgrok() {
 
 function setUseNgrok(useNgrok: boolean) {
     store.set("use_ngrok", useNgrok)
+}
+
+function getStore(key: string) {
+    return store.get(key)
+}
+
+function setStore(key: string, value: string) {
+    store.set(key, value)
 }
