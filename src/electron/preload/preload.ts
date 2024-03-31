@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld("store", {
 
 contextBridge.exposeInMainWorld("file", {
   save: (filePath: string, text: string) => fs.writeFileSync(filePath, text, { encoding: 'utf-8' }),
+  saveBin: (filePath: string, data: any) => fs.writeFileSync(filePath, Buffer.from(data), "binary"),
   load: (filePath: string, encoding: BufferEncoding) => fs.readFileSync(filePath, {encoding: encoding}),
   exists: (filePath: string) => fs.existsSync(filePath),
   join: (...paths: string[]) => join(...paths),
@@ -48,7 +49,7 @@ contextBridge.exposeInMainWorld("file", {
   },
   resolve: (filePath: string) => path.resolve(filePath),
   basename: (filePath: string) => basename(filePath),
-  dirname: (filePath: string) => dirname(filePath)
+  dirname: (filePath: string) => dirname(filePath),
 });
 
 contextBridge.exposeInMainWorld("token", {

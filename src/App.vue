@@ -52,7 +52,7 @@ export default defineComponent({
             router>
           <template v-slot:prepend>
             <v-badge :model-value="this.runningStore.status !== 'エラー'" :color="colors[this.runningStore.status]" dot>
-              <v-icon icon="mdi-code-greater-than"></v-icon>
+              <v-icon icon="mdi-console"></v-icon>
             </v-badge>
           </template>
         </v-list-item>

@@ -19,6 +19,7 @@ declare global {
 
 export interface IFile {
     save: (filePath: string, text: string) => void
+    saveBin: (filePath: string, data: any) => void
     load: (filePath: string, encoding: BufferEncoding) => string
     exists: (filePath: string) => boolean
     join: (...paths: string[]) => string
@@ -31,7 +32,7 @@ export interface IFile {
     resolve: (filePath: string) => string
     rmDir: (dirPath: string) => void
     basename: (filePath: string) => string
-    dirname: (filePath: string) => string
+    dirname: (filePath: string) => string,
 }
 
 export interface IToken {

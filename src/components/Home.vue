@@ -4,7 +4,8 @@ import { useGitHubStore } from "../store/github";
 import { defineComponent } from "vue";
 import {IFile} from "../@types/global";
 import { useServerSettingsStore } from "../store/server-settings";
-import { no } from "vuetify/locale";
+import axios from "axios";
+import { compare } from "compare-versions";
 
 export default defineComponent({
   name: "Home",
@@ -15,6 +16,9 @@ export default defineComponent({
     },
     joinedPath() {
       return window.file.resolve(window.file.join(this.path, this.server?.name ? this.server.name : ""))
+    },
+    newJoinedPath() {
+      return window.file.resolve(window.file.join(this.path, this.name))
     }
   },
   data: () => ({
@@ -37,7 +41,10 @@ export default defineComponent({
     errorSnackbar: false,
     errorMessage: "",
     overlay: false,
-    overlayMessage: ""
+    overlayMessage: "",
+    minecraftVersions: [],
+    selectedVersion: 0,
+    eula: false
   }),
   async mounted() {
     this.serversPath = await window.file.getUserDataPath("servers.json")
@@ -51,6 +58,14 @@ export default defineComponent({
   },
   async created() {
     await this.githubStore.fetchData(window)
+    axios.get("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json")
+        .then(res => {
+          for (let v of res.data.versions) {
+            if (v.type !== "release") continue
+            if (compare(v.id, "1.18", "<")) continue
+            this.minecraftVersions.push(v)
+          }
+        })
   },
   methods: {
     setSnackbar(message: string) {
@@ -104,8 +119,19 @@ export default defineComponent({
       this.dialog = false
       this.overlay = false
     },
-    async addServer() {
+    async addServer(create: boolean) {
       this.setOverlay("サーバー追加中")
+      if (create) {
+        this.path = window.file.join(this.path, this.name)
+        try {
+          window.file.mkdir(this.path)
+        }
+        catch (error) {
+          console.log(error)
+          this.setError("フォルダの作成に失敗しました")
+          return
+        }
+      }
       try {
         await this.githubStore.octokit.repos.get({
           owner: (await this.githubStore.octokit.rest.users.getAuthenticated()).data.login,
@@ -150,7 +176,8 @@ export default defineComponent({
       }
 
       try {
-        window.file.save(window.file.join(this.path, "status.txt"), "#stopping")
+        if (create) window.file.save(window.file.join(this.path, "status.txt"), "#stopping")
+        else window.file.save(window.file.join(this.path, "status.txt"), "#stopping")
       }
       catch (error) {
         console.log(error)
@@ -158,6 +185,8 @@ export default defineComponent({
         this.overlay = false
         return
       }
+
+      if (create && !await this.downloadServer()) return
 
       try {
         if (!window.file.exists(window.file.join(this.path, ".git"))) {
@@ -188,6 +217,7 @@ export default defineComponent({
       this.minMem = 0
       this.maxMem = 0
       this.command = ""
+      this.eula = false
 
       this.dialog = false
       this.overlay = false
@@ -228,6 +258,62 @@ export default defineComponent({
       }
 
       if (notFound) this.setError("起動コマンドが見つかりませんでした")
+    },
+    async downloadServer() {
+      try {
+        let res = await axios.get(this.minecraftVersions[this.selectedVersion].url, {responseType: "arraybuffer"})
+        let byteHash = await window.crypto.subtle.digest("SHA-1", res.data)
+        let arrayHash = Array.from(new Uint8Array(byteHash));
+        let hash = arrayHash
+            .map(b => b.toString(16).padStart(2, "0"))
+            .join("")
+
+        if (hash !== this.minecraftVersions[this.selectedVersion].sha1) {
+          this.setError("不正なファイルを検出したため、ダウンロードをキャンセルしました")
+          return false
+        }
+
+        const data = JSON.parse(new TextDecoder().decode(res.data))
+
+        res = await axios.get(data.downloads.server.url, {responseType: "arraybuffer"})
+        byteHash = await window.crypto.subtle.digest("SHA-1", res.data)
+        arrayHash = Array.from(new Uint8Array(byteHash));
+        hash = arrayHash
+            .map(b => b.toString(16).padStart(2, "0"))
+            .join("")
+
+        if (hash !== data.downloads.server.sha1) {
+          this.setError("不正なファイルを検出したため、ダウンロードをキャンセルしました")
+          return false
+        }
+
+        try {
+          window.file.saveBin(window.file.join(this.path, "server.jar"), res.data)
+        }
+        catch (error) {
+          console.log(error)
+          this.setError("ファイルの保存に失敗しました")
+          return false
+        }
+      }
+      catch (error) {
+        this.setError("ファイルのダウンロードに失敗しました")
+        return false
+      }
+
+      return true
+    },
+    openExternal(url: string) {
+      window.shell.openExternal(url)
+    }
+  },
+  watch: {
+    tab() {
+      this.name = ""
+      this.command = ""
+      this.maxMem = 2048
+      this.minMem = 0
+      this.eula = false
     }
   }
 })
@@ -275,6 +361,7 @@ export default defineComponent({
                   this.name = ''
                   this.server = null
                   this.command = ''
+                  this.eula = false
                 }"
                 :disabled="!githubStore.userData || !githubStore.availableSSH || !githubStore.gitVersion"
             />
@@ -297,12 +384,105 @@ export default defineComponent({
           align-tabs="center"
           color="primary"
       >
-        <v-tab :value="1">フォルダを追加</v-tab>
-        <v-tab :value="2">GitHubからインポート</v-tab>
+        <v-row justify="space-evenly">
+          <v-col cols="4"><v-tab :value="1" width="100%">新規作成</v-tab></v-col>
+          <v-col cols="4"><v-tab :value="2" width="100%">PCからインポート</v-tab></v-col>
+          <v-col cols="4"><v-tab :value="3" width="100%">GitHubからインポート</v-tab></v-col>
+        </v-row>
       </v-tabs>
       <v-card-text>
         <v-window v-model="tab">
           <v-window-item :value="1">
+            <v-row class="mt-2">
+              <v-col cols="12">
+                <v-text-field
+                    label="サーバー名"
+                    variant="outlined"
+                    v-model="name"
+                    :rules="[githubValidation]"
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-select
+                    :items="minecraftVersions.map((v, i) => ({title: v.id, value: i}))"
+                    variant="outlined"
+                    label="バージョンを選択"
+                    hide-details
+                    v-model="selectedVersion"
+                />
+              </v-col>
+              <v-col cols="3">
+                <v-btn size="large" @click="selectPath">フォルダを選択</v-btn>
+              </v-col>
+              <v-col cols="9" align-self="center">
+                <p class="text-end">{{newJoinedPath}}</p>
+              </v-col>
+              <v-col cols="6">
+                <v-text-field
+                    type="number"
+                    label="最大メモリ"
+                    suffix="MB"
+                    v-model.number="maxMem"
+                    variant="outlined"
+                    @change="maxMem = Math.max(minMem + 1, maxMem)"
+                    hide-details
+                />
+              </v-col>
+              <v-col cols="6">
+                <v-text-field
+                    type="number"
+                    label="最小メモリ"
+                    suffix="MB"
+                    v-model.number="minMem"
+                    variant="outlined"
+                    @change="() => {minMem = Math.max(0, minMem); maxMem = Math.max(minMem, maxMem)}"
+                    hide-details
+                />
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col>
+                <v-text-field
+                    variant="outlined"
+                    label="起動コマンド"
+                    v-model="command"
+                    placeholder="例：java -jar server.jar nogui"
+                    hide-details
+                >
+                  <template v-slot:append>
+                    <v-tooltip location="bottom">
+                      <template v-slot:activator="{props}">
+                        <v-btn
+                            size="large"
+                            color="primary"
+                            style="text-transform: none"
+                            v-bind="props"
+                            @click="importCommand"
+                            variant="text"
+                        >batからインポート</v-btn>
+                      </template>
+                      <p>シェルスクリプトからもインポートすることができます</p>
+                    </v-tooltip>
+                  </template>
+                </v-text-field>
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col>
+                <v-checkbox v-model="eula">
+                  <template v-slot:prepend>
+                    利用規約(
+                    <div class="d-flex flex-row align-center" style="cursor: pointer;" @click="openExternal('https://aka.ms/MinecraftEULA')">
+                      <div class="text-blue text-decoration-underline">https://aka.ms/MinecraftEULA</div>
+                      <v-icon>mdi-open-in-new</v-icon>
+                    </div>
+                    )に同意
+                  </template>
+                </v-checkbox>
+              </v-col>
+            </v-row>
+          </v-window-item>
+          <v-window-item :value="2">
             <v-row class="mt-2">
               <v-col cols="12">
                 <v-text-field
@@ -367,7 +547,7 @@ export default defineComponent({
               </v-col>
             </v-row>
           </v-window-item>
-          <v-window-item :value="2">
+          <v-window-item :value="3">
             <v-row class="mt-2">
               <v-col cols="12">
                 <v-select
@@ -425,11 +605,12 @@ export default defineComponent({
         <v-btn
             variant="text"
             @click="() => {
-              if (tab === 1) addServer()
-              else if (tab === 2) cloneServer()
+              if (tab === 1) addServer(true)
+              else if (tab === 2) addServer(false)
+              else if (tab === 3) cloneServer()
             }"
             size="large"
-            :disabled="!((tab === 1 && this.githubValidation(this.name) === true) || (tab === 2 && this.server))"
+            :disabled="!((tab === 1 && this.githubValidation(this.name) === true && this.eula) || (tab === 2 && this.githubValidation(this.name) === true) || (tab === 3 && this.server))"
         >追加</v-btn>
       </v-card-actions>
     </v-card>

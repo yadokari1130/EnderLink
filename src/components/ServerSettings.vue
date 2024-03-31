@@ -5,9 +5,11 @@ import {IFile} from "../@types/global";
 import { useGitHubStore } from "../store/github";
 import { useRouter } from "vue-router";
 import { useRunningStore } from "../store/running";
+import ServerProperties from "./ServerProperties.vue";
 
 export default defineComponent({
   name: "ServerSettings",
+  components: {ServerProperties},
   data: () => ({
     serverSettingsStore: useServerSettingsStore(),
     githubStore: useGitHubStore(),
@@ -39,7 +41,8 @@ export default defineComponent({
     collaborator: null,
     deleteCollaboratorDialog: false,
     deletedCollaborator: [],
-    status: ""
+    status: "",
+    tab: 1
   }),
   async mounted() {
     this.serversPath = await window.file.getUserDataPath("servers.json")
@@ -53,9 +56,12 @@ export default defineComponent({
         .catch(error => console.log(error))
     this.setCollaborators()
         .catch(error => console.log(error))
-    this.status = window.file.load(window.file.join(this.serverSettingsStore.serverData.path, "status.txt"), "utf-8").replace("\n", "");
+    this.setStatus()
   },
   methods: {
+    setStatus() {
+      this.status = window.file.load(window.file.join(this.serverSettingsStore.serverData.path, "status.txt"), "utf-8").replace("\n", "")
+    },
     async setCommitLog() {
       this.commitLog = (await window.git.log(this.serverSettingsStore.serverData.path)).all.map(c => ({
         author: c.author_name,
@@ -222,6 +228,7 @@ export default defineComponent({
       }
 
       await this.setCommitLog()
+      this.setStatus()
       this.setSnackbar("以前の状態に戻しました")
       this.overlay = false
     },
@@ -238,6 +245,7 @@ export default defineComponent({
       }
 
       await this.setCommitLog()
+      this.setStatus()
       this.setSnackbar("アップロードしました")
       this.overlay = false
     },
@@ -254,6 +262,7 @@ export default defineComponent({
       }
 
       await this.setCommitLog()
+      this.setStatus()
       this.setSnackbar("ダウンロードしました")
       this.overlay = false
     },
@@ -271,6 +280,7 @@ export default defineComponent({
       }
 
       await this.setCommitLog()
+      this.setStatus()
       this.setSnackbar("アップロードしました")
       this.overlay = false
     },
@@ -288,6 +298,7 @@ export default defineComponent({
       }
 
       await this.setCommitLog()
+      this.setStatus()
       this.setSnackbar("ダウンロードしました")
       this.overlay = false
     },
@@ -464,341 +475,369 @@ export default defineComponent({
     </v-col>
   </v-row>
 
-  <div v-if="serverSettingsStore.serverData" class="mt-8">
-    <div class="d-flex flex-row align-center">
-      <v-img rounded inline class="mr-4" :src="icon ? `data:image/png;base64,${icon}` : 'https://raw.githubusercontent.com/yadokari1130/EnderLink/master/public/pack.png'" width="128px" height="128px"></v-img>
-      <h2>サーバー名：{{serverSettingsStore.serverData.name}}</h2>
-    </div>
+  <v-tabs
+      v-model="tab"
+      align-tabs="center"
+      color="primary"
+  >
+    <v-row justify="space-evenly">
+      <v-col cols="4"><v-tab :value="1" width="100%" prepend-icon="mdi-cog"><h3>基本設定</h3></v-tab></v-col>
+      <v-col cols="4"><v-tab :value="2" width="100%" prepend-icon="mdi-file-cog-outline"><h3>プロパティ</h3></v-tab></v-col>
+      <v-col cols="4"><v-tab :value="3" width="100%" prepend-icon="mdi-earth"><h3>ワールド・データパック</h3></v-tab></v-col>
+    </v-row>
+  </v-tabs>
 
-    <v-tooltip :disabled="!runningStore.isRunning" location="bottom">
-      <template v-slot:activator="{props}">
-        <div class="d-inline-block" v-bind="props" style="width: 100%">
-          <v-btn
-              width="100%"
-              size="large"
-              class="mt-4"
-              prepend-icon="mdi-play"
-              color="primary"
-              @click="run"
-              :disabled="runningStore.isRunning"
-          >起動</v-btn>
+  <v-window v-model="tab" class="mt-8">
+    <v-window-item :value="1">
+      <div v-if="serverSettingsStore.serverData">
+        <div class="d-flex flex-row align-center">
+          <v-img rounded inline class="mr-4" :src="icon ? `data:image/png;base64,${icon}` : 'https://raw.githubusercontent.com/yadokari1130/EnderLink/master/public/pack.png'" width="128px" height="128px"></v-img>
+          <h2>サーバー名：{{serverSettingsStore.serverData.name}}</h2>
         </div>
-      </template>
-      <p>他のサーバーが起動中です</p>
-      <p>複数のサーバーを同時に起動させることはできません</p>
-    </v-tooltip>
-    <v-tooltip location="bottom">
-      <template v-slot:activator="{props}">
-        <div class="d-inline-block" v-bind="props" style="width: 100%">
-          <v-btn
-              width="100%"
-              size="large"
-              class="mt-4"
-              prepend-icon="mdi-stop"
-              color="error"
-              variant="outlined"
-              @click="stop"
-              :disabled="this.status !== this.githubStore.userData.login || this.runningStore.isRunning"
-          >停止済みにする</v-btn>
-        </div>
-      </template>
-      <div v-if="this.status === '#stopping'">
-        <p>すでに停止済みです</p>
-      </div>
-      <div v-else-if="this.status !== this.githubStore.userData.login">
-        <p>他の人が起動中です</p>
-        <p>停止済みにできるのは自分が起動している状態になっているものの、実際は起動していないときのみです</p>
-      </div>
-      <div v-else-if="runningStore.isRunning">
-        <p>サーバーが起動中です</p>
-        <p>サーバーを停止してください</p>
-      </div>
-      <div v-else>
-        <p>サーバーを停止済みにし、データを同期します</p>
-        <p>サーバーを起動したままアプリケーションを終了してしまった場合など、</p>
-        <p>自分が起動した状態になっているものの、実際は起動していないときに状態を更新します</p>
-      </div>
-    </v-tooltip>
 
-    <h2 class="mt-16 ma-4">基本設定</h2>
-    <div class="pa-4 rounded border">
-      <v-row>
-        <v-col cols="10" align-self="center">
-          <p>ディレクトリ：{{serverSettingsStore.serverData.path}}</p>
-        </v-col>
-        <v-col cols="2">
-          <v-btn width="100%" color="primary" size="large" @click="openFolder">開く</v-btn>
-        </v-col>
-      </v-row>
+        <v-tooltip :disabled="!runningStore.isRunning" location="bottom">
+          <template v-slot:activator="{props}">
+            <div class="d-inline-block" v-bind="props" style="width: 100%">
+              <v-btn
+                  width="100%"
+                  size="large"
+                  class="mt-4"
+                  prepend-icon="mdi-play"
+                  color="primary"
+                  @click="run"
+                  :disabled="runningStore.isRunning"
+              >起動</v-btn>
+            </div>
+          </template>
+          <p>他のサーバーが起動中です</p>
+          <p>複数のサーバーを同時に起動させることはできません</p>
+        </v-tooltip>
+        <v-tooltip location="bottom">
+          <template v-slot:activator="{props}">
+            <div class="d-inline-block" v-bind="props" style="width: 100%">
+              <v-btn
+                  width="100%"
+                  size="large"
+                  class="mt-4"
+                  prepend-icon="mdi-stop"
+                  color="error"
+                  variant="outlined"
+                  @click="stop"
+                  :disabled="this.status !== this.githubStore.userData.login || this.runningStore.isRunning"
+              >停止済みにする</v-btn>
+            </div>
+          </template>
+          <div v-if="this.status === '#stopping'">
+            <p>すでに停止済みです</p>
+          </div>
+          <div v-else-if="this.status !== this.githubStore.userData.login">
+            <p>他の人が起動中です</p>
+            <p>停止済みにできるのは自分が起動している状態になっているものの、実際は起動していないときのみです</p>
+          </div>
+          <div v-else-if="runningStore.isRunning">
+            <p>サーバーが起動中です</p>
+            <p>サーバーを停止してください</p>
+          </div>
+          <div v-else>
+            <p>サーバーを停止済みにし、データを同期します</p>
+            <p>サーバーを起動したままアプリケーションを終了してしまった場合など、</p>
+            <p>自分が起動した状態になっているものの、実際は起動していないときに状態を更新します</p>
+          </div>
+        </v-tooltip>
 
-      <v-row>
-        <v-col cols="6">
-          <v-text-field
-              type="number"
-              label="最大メモリ"
-              suffix="MB"
-              v-model.number="maxMem"
-              variant="outlined"
-              @change="maxMem = Math.max(minMem + 1, maxMem)"
-              hide-details
-          />
-        </v-col>
-        <v-col cols="6">
-          <v-text-field
-              type="number"
-              label="最小メモリ"
-              suffix="MB"
-              v-model.number="minMem"
-              variant="outlined"
-              @change="() => {minMem = Math.max(0, minMem); maxMem = Math.max(minMem, maxMem)}"
-              hide-details
-          />
-        </v-col>
-      </v-row>
+        <h2 class="mt-16 ma-4">基本設定</h2>
+        <div class="pa-4 rounded border">
+          <v-row>
+            <v-col cols="10" align-self="center">
+              <p>ディレクトリ：{{serverSettingsStore.serverData.path}}</p>
+            </v-col>
+            <v-col cols="2">
+              <v-btn width="100%" color="primary" size="large" @click="openFolder">開く</v-btn>
+            </v-col>
+          </v-row>
 
-      <v-row>
-        <v-col>
-          <v-text-field
-              variant="outlined"
-              label="起動コマンド"
-              v-model="command"
-              :hide-details="true"
-              placeholder="例：java -jar server.jar nogui">
-            <template v-slot:append>
-              <v-tooltip location="bottom">
-                <template v-slot:activator="{props}">
-                  <v-btn
-                      size="large"
-                      color="primary"
-                      style="text-transform: none"
-                      v-bind="props"
-                      @click="importCommand"
-                      variant="text"
-                  >batからインポート</v-btn>
+          <v-row>
+            <v-col cols="6">
+              <v-text-field
+                  type="number"
+                  label="最大メモリ"
+                  suffix="MB"
+                  v-model.number="maxMem"
+                  variant="outlined"
+                  @change="maxMem = Math.max(minMem + 1, maxMem)"
+                  hide-details
+              />
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                  type="number"
+                  label="最小メモリ"
+                  suffix="MB"
+                  v-model.number="minMem"
+                  variant="outlined"
+                  @change="() => {minMem = Math.max(0, minMem); maxMem = Math.max(minMem, maxMem)}"
+                  hide-details
+              />
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col>
+              <v-text-field
+                  variant="outlined"
+                  label="起動コマンド"
+                  v-model="command"
+                  :hide-details="true"
+                  placeholder="例：java -jar server.jar nogui">
+                <template v-slot:append>
+                  <v-tooltip location="bottom">
+                    <template v-slot:activator="{props}">
+                      <v-btn
+                          size="large"
+                          color="primary"
+                          style="text-transform: none"
+                          v-bind="props"
+                          @click="importCommand"
+                          variant="text"
+                      >batからインポート</v-btn>
+                    </template>
+                    <p>シェルスクリプトからもインポートすることができます</p>
+                  </v-tooltip>
                 </template>
-                <p>シェルスクリプトからもインポートすることができます</p>
+              </v-text-field>
+            </v-col>
+          </v-row>
+
+          <v-row justify="end">
+            <v-col cols="2">
+              <v-btn @click="save" color="primary" size="large" width="100%">保存</v-btn>
+            </v-col>
+          </v-row>
+        </div>
+
+        <h2 class="mt-16 ma-4">データ管理</h2>
+        <div class="rounded border pa-4">
+          <v-row>
+            <v-col cols="6">
+              <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                  <v-btn
+                      width="100%"
+                      color="primary"
+                      v-bind="props"
+                      size="large"
+                      @click="upload"
+                  >データをアップロード</v-btn>
+                </template>
+                <p>データに矛盾がない場合、GitHubにデータをアップロードします</p>
+                <p>サーバー終了後に自動でアップロードされるため</p>
+                <p>基本的に行う必要はありません</p>
               </v-tooltip>
-            </template>
-          </v-text-field>
-        </v-col>
-      </v-row>
+            </v-col>
+            <v-col cols="6">
+              <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                  <v-btn
+                      width="100%"
+                      color="primary"
+                      v-bind="props"
+                      size="large"
+                      @click="download"
+                  >データをダウンロード</v-btn>
+                </template>
+                <p>データに矛盾がない場合、GitHubにデータをアップロードします</p>
+                <p>サーバー起動前に自動でダウンロードされるため</p>
+                <p>基本的に行う必要はありません</p>
+              </v-tooltip>
+            </v-col>
+          </v-row>
 
-      <v-row justify="end">
-        <v-col cols="2">
-          <v-btn @click="save" color="primary" size="large" width="100%">保存</v-btn>
-        </v-col>
-      </v-row>
-    </div>
+          <v-row>
+            <v-col cols="6">
+              <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                  <v-btn
+                      width="100%"
+                      variant="outlined"
+                      color="error"
+                      size="large"
+                      v-bind="props"
+                      @click="forceUploadDialog = true"
+                  >データを強制的にアップロード</v-btn>
+                </template>
+                <p>データをGitHubに強制的にアップロードします</p>
+                <p><strong>他の参加者全員が強制的にダウンロードする必要があります</strong></p>
+                <p><strong>なにか問題が起きているときのみアップロードしてください</strong></p>
+              </v-tooltip>
+            </v-col>
+            <v-col cols="6">
+              <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                  <v-btn
+                      width="100%"
+                      variant="outlined"
+                      color="error"
+                      size="large"
+                      v-bind="props"
+                      @click="forceDownloadDialog = true"
+                  >データを強制的にダウンロード</v-btn>
+                </template>
+                <p>パソコンのデータをGitHubのデータで強制的に上書きします</p>
+                <p><strong>保存していないデータは失われます</strong></p>
+                <p><strong>なにか問題が起きているときのみダウンロードしてください</strong></p>
+              </v-tooltip>
+            </v-col>
+          </v-row>
+        </div>
 
-    <h2 class="mt-16 ma-4">データ管理</h2>
-    <div class="rounded border pa-4">
-      <v-row>
-        <v-col cols="6">
-          <v-tooltip location="bottom">
-            <template v-slot:activator="{ props }">
-              <v-btn
-                  width="100%"
-                  color="primary"
-                  v-bind="props"
-                  size="large"
-                  @click="upload"
-              >データをアップロード</v-btn>
-            </template>
-            <p>データに矛盾がない場合、GitHubにデータをアップロードします</p>
-            <p>サーバー終了後に自動でアップロードされるため</p>
-            <p>基本的に行う必要はありません</p>
-          </v-tooltip>
-        </v-col>
-        <v-col cols="6">
-          <v-tooltip location="bottom">
-            <template v-slot:activator="{ props }">
-              <v-btn
-                  width="100%"
-                  color="primary"
-                  v-bind="props"
-                  size="large"
-                  @click="download"
-              >データをダウンロード</v-btn>
-            </template>
-            <p>データに矛盾がない場合、GitHubにデータをアップロードします</p>
-            <p>サーバー起動前に自動でダウンロードされるため</p>
-            <p>基本的に行う必要はありません</p>
-          </v-tooltip>
-        </v-col>
-      </v-row>
-
-      <v-row>
-        <v-col cols="6">
-          <v-tooltip location="bottom">
-            <template v-slot:activator="{ props }">
-              <v-btn
-                  width="100%"
-                  variant="outlined"
-                  color="error"
-                  size="large"
-                  v-bind="props"
-                  @click="forceUploadDialog = true"
-              >データを強制的にアップロード</v-btn>
-            </template>
-            <p>データをGitHubに強制的にアップロードします</p>
-            <p><strong>他の参加者全員が強制的にダウンロードする必要があります</strong></p>
-            <p><strong>なにか問題が起きているときのみアップロードしてください</strong></p>
-          </v-tooltip>
-        </v-col>
-        <v-col cols="6">
-          <v-tooltip location="bottom">
-            <template v-slot:activator="{ props }">
-              <v-btn
-                  width="100%"
-                  variant="outlined"
-                  color="error"
-                  size="large"
-                  v-bind="props"
-                  @click="forceDownloadDialog = true"
-              >データを強制的にダウンロード</v-btn>
-            </template>
-            <p>パソコンのデータをGitHubのデータで強制的に上書きします</p>
-            <p><strong>保存していないデータは失われます</strong></p>
-            <p><strong>なにか問題が起きているときのみダウンロードしてください</strong></p>
-          </v-tooltip>
-        </v-col>
-      </v-row>
-    </div>
-
-    <h2 class="mt-16 ma-4">操作履歴</h2>
-    <div class="pa-4 rounded border">
-      <v-row>
-        <v-data-table
-            :items="commitLog"
-            :headers="[
+        <h2 class="mt-16 ma-4">操作履歴</h2>
+        <div class="pa-4 rounded border">
+          <v-row>
+            <v-data-table
+                :items="commitLog"
+                :headers="[
               {title: 'ユーザー', key: 'author', width: '15%'},
               {title: '時間', key: 'time', width: '15%'},
               {title: 'コメント', key: 'message', width: '65%'},
               {title: '操作', key: 'actions', align: 'center', sortable: false, width: '5%'},
           ]"
-        >
-          <template v-slot:item.actions="{item}">
-            <v-btn
-                variant="text"
-                color="error"
-                @click="checkRollback(item)"
-            >戻す</v-btn>
-          </template>
-        </v-data-table>
-      </v-row>
-    </div>
+            >
+              <template v-slot:item.actions="{item}">
+                <v-btn
+                    variant="text"
+                    color="error"
+                    @click="checkRollback(item)"
+                >戻す</v-btn>
+              </template>
+            </v-data-table>
+          </v-row>
+        </div>
 
-    <h2 class="mt-16 ma-4">サーバー管理者</h2>
-    <div class="pa-4 rounded border">
-      <v-row>
-        <v-col cols="12">
-          <v-text-field
-              variant="outlined"
-              @input="found = true"
-              :error-messages="found ? null : 'ユーザーが見つかりませんでした'"
-              v-model="userName"
-              @keyup.enter="addCollaborator"
-              label="ユーザー名"
-          >
-            <template v-slot:append>
-              <v-tooltip location="bottom" :disabled="serverSettingsStore.serverData.owner === githubStore.userData.login">
-                <template v-slot:activator="{ props }">
-                  <div v-bind="props" class="d-inline-block" style="width: 100%;">
-                    <v-btn
-                        size="large"
-                        color="primary"
-                        width="100%"
-                        @click="addCollaborator"
-                        :disabled="serverSettingsStore.serverData.owner !== githubStore.userData.login"
-                    >ユーザー追加</v-btn>
-                  </div>
+        <h2 class="mt-16 ma-4">サーバー管理者</h2>
+        <div class="pa-4 rounded border">
+          <v-row>
+            <v-col cols="12">
+              <v-text-field
+                  variant="outlined"
+                  @input="found = true"
+                  :error-messages="found ? null : 'ユーザーが見つかりませんでした'"
+                  v-model="userName"
+                  @keyup.enter="addCollaborator"
+                  label="ユーザー名"
+              >
+                <template v-slot:append>
+                  <v-tooltip location="bottom" :disabled="serverSettingsStore.serverData.owner === githubStore.userData.login">
+                    <template v-slot:activator="{ props }">
+                      <div v-bind="props" class="d-inline-block" style="width: 100%;">
+                        <v-btn
+                            size="large"
+                            color="primary"
+                            width="100%"
+                            @click="addCollaborator"
+                            :disabled="serverSettingsStore.serverData.owner !== githubStore.userData.login"
+                        >ユーザー追加</v-btn>
+                      </div>
+                    </template>
+                    <p>ユーザーを追加できるのは最初に作成した所有者のみです</p>
+                  </v-tooltip>
                 </template>
-                <p>ユーザーを追加できるのは最初に作成した所有者のみです</p>
-              </v-tooltip>
-            </template>
-          </v-text-field>
-        </v-col>
-      </v-row>
+              </v-text-field>
+            </v-col>
+          </v-row>
 
-      <v-row>
-        <v-data-table
-            :items="collaborators"
-            :headers="[
+          <v-row>
+            <v-data-table
+                :items="collaborators"
+                :headers="[
             {title: 'ユーザー', key: 'user', width: '85%'},
             {title: '状態', key: 'status', width: '10%', align: 'center'},
             {title: '操作', key: 'actions', align: 'center', width: '5%', sortable: false}
         ]"
-        >
-          <template v-slot:item.user="{item}">
-            <div class="d-flex flex-row align-center">
-              <v-avatar rounded="50%" :image="item.avatarUrl" size="48" class="ma-2 mr-4"/>
-              <h3>{{item.name}}</h3>
-            </div>
-          </template>
-          <template v-slot:item.status="{item}">
-            <p>{{jpStatus[item.status]}}</p>
-          </template>
-          <template v-slot:item.actions="{item}">
-            <v-btn
-                variant="text"
-                color="error"
-                @click="checkDeleteCollaborator(item)"
-                :disabled="item.name === githubStore.userData.login || serverSettingsStore.serverData.owner !== githubStore.userData.login"
-            >削除</v-btn>
-          </template>
-        </v-data-table>
-      </v-row>
-    </div>
-
-    <v-row class="mt-16">
-      <v-col cols="6">
-        <v-tooltip location="bottom">
-          <template v-slot:activator="{ props }">
-            <v-btn
-                variant="outlined"
-                color="error"
-                size="large"
-                width="100%"
-                v-bind="props"
-                @click="() => {directoryDialog = true}"
             >
-              パソコンから削除
-            </v-btn>
-          </template>
-          <p>パソコンからサーバーデータを削除します</p>
-          <p>GitHubには残るので、もう一度GitHubから</p>
-          <p>インポートすることでサーバーで遊ぶことができます</p>
-        </v-tooltip>
-      </v-col>
-      <v-col cols="6">
-        <v-tooltip location="bottom">
-          <template v-slot:activator="{ props }">
-            <div v-bind="props" class="d-inline-block" style="width: 100%;">
-              <v-btn
-                  variant="outlined"
-                  color="error"
-                  size="large"
-                  width="100%"
-                  :disabled="serverSettingsStore.serverData.owner !== githubStore.userData.login"
-                  @click="() => {repositoryDialog = true}"
-              >
-                GitHubから削除
-              </v-btn>
-            </div>
-          </template>
-          <div v-if="serverSettingsStore.serverData.owner !== githubStore.userData.login">
-            <p>GitHubのデータを削除できるのは</p>
-            <p>最初に作成した所有者のみです</p>
-          </div>
-          <div v-else>
-            <p>GitHubのデータを完全に消去します</p>
-            <p><strong>データがもとに戻ることはありません</strong></p>
-            <p><strong>削除する際は問題がないか十分に確認してください</strong></p>
-          </div>
-        </v-tooltip>
-      </v-col>
-    </v-row>
-  </div>
+              <template v-slot:item.user="{item}">
+                <div class="d-flex flex-row align-center">
+                  <v-avatar rounded="50%" :image="item.avatarUrl" size="48" class="ma-2 mr-4"/>
+                  <h3>{{item.name}}</h3>
+                </div>
+              </template>
+              <template v-slot:item.status="{item}">
+                <p>{{jpStatus[item.status]}}</p>
+              </template>
+              <template v-slot:item.actions="{item}">
+                <v-btn
+                    variant="text"
+                    color="error"
+                    @click="checkDeleteCollaborator(item)"
+                    :disabled="item.name === githubStore.userData.login || serverSettingsStore.serverData.owner !== githubStore.userData.login"
+                >削除</v-btn>
+              </template>
+            </v-data-table>
+          </v-row>
+        </div>
+
+        <v-row class="mt-16">
+          <v-col cols="6">
+            <v-tooltip location="bottom">
+              <template v-slot:activator="{ props }">
+                <v-btn
+                    variant="outlined"
+                    color="error"
+                    size="large"
+                    width="100%"
+                    v-bind="props"
+                    @click="() => {directoryDialog = true}"
+                >
+                  パソコンから削除
+                </v-btn>
+              </template>
+              <p>パソコンからサーバーデータを削除します</p>
+              <p>GitHubには残るので、もう一度GitHubから</p>
+              <p>インポートすることでサーバーで遊ぶことができます</p>
+            </v-tooltip>
+          </v-col>
+          <v-col cols="6">
+            <v-tooltip location="bottom">
+              <template v-slot:activator="{ props }">
+                <div v-bind="props" class="d-inline-block" style="width: 100%;">
+                  <v-btn
+                      variant="outlined"
+                      color="error"
+                      size="large"
+                      width="100%"
+                      :disabled="serverSettingsStore.serverData.owner !== githubStore.userData.login"
+                      @click="() => {repositoryDialog = true}"
+                  >
+                    GitHubから削除
+                  </v-btn>
+                </div>
+              </template>
+              <div v-if="serverSettingsStore.serverData.owner !== githubStore.userData.login">
+                <p>GitHubのデータを削除できるのは</p>
+                <p>最初に作成した所有者のみです</p>
+              </div>
+              <div v-else>
+                <p>GitHubのデータを完全に消去します</p>
+                <p><strong>データがもとに戻ることはありません</strong></p>
+                <p><strong>削除する際は問題がないか十分に確認してください</strong></p>
+              </div>
+            </v-tooltip>
+          </v-col>
+        </v-row>
+      </div>
+    </v-window-item>
+
+    <v-window-item :value="2">
+      <ServerProperties
+          @set-overlay="setOverlay"
+          @set-error="setError"
+          @set-snackbar="setSnackbar"
+      />
+    </v-window-item>
+
+    <v-window-item :value="3">
+
+    </v-window-item>
+  </v-window>
 
   <v-dialog
       v-model="directoryDialog"
