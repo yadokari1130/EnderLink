@@ -6,10 +6,11 @@ import {IFile} from "../@types/global";
 import { useServerSettingsStore } from "../store/server-settings";
 import axios from "axios";
 import { compare } from "compare-versions";
+import WorldCard from "./WorldCard.vue";
 
 export default defineComponent({
   name: "Home",
-  components: {ServerCard},
+  components: {WorldCard, ServerCard},
   computed: {
     ServerData(): ServerData {
       return ServerCard.ServerData
@@ -44,7 +45,9 @@ export default defineComponent({
     overlayMessage: "",
     minecraftVersions: [],
     selectedVersion: 0,
-    eula: false
+    eula: false,
+    selectedWorldPath: "",
+    singleWorldDialog: false
   }),
   async mounted() {
     this.serversPath = await window.file.getUserDataPath("servers.json")
@@ -176,8 +179,8 @@ export default defineComponent({
       }
 
       try {
-        if (create) window.file.save(window.file.join(this.path, "status.txt"), "#stopping")
-        else window.file.save(window.file.join(this.path, "status.txt"), "#stopping")
+        window.file.save(window.file.join(this.path, "status.txt"), "#stopping")
+        if (create) window.file.save(window.file.join(this.path, "eula.txt"), "eula=true")
       }
       catch (error) {
         console.log(error)
@@ -186,7 +189,16 @@ export default defineComponent({
         return
       }
 
-      if (create && !await this.downloadServer()) return
+      try {
+        if (this.selectedWorldPath) window.file.cp(this.selectedWorldPath, window.file.join(this.path, "world"), () => true)
+      }
+      catch (error) {
+        console.log(error)
+        this.setError("ワールドのコピーに失敗しました")
+        return
+      }
+
+      if (create && !(await this.downloadServer())) return
 
       try {
         if (!window.file.exists(window.file.join(this.path, ".git"))) {
@@ -218,6 +230,7 @@ export default defineComponent({
       this.maxMem = 0
       this.command = ""
       this.eula = false
+      this.selectedWorldPath = null
 
       this.dialog = false
       this.overlay = false
@@ -305,7 +318,26 @@ export default defineComponent({
     },
     openExternal(url: string) {
       window.shell.openExternal(url)
-    }
+    },
+    async selectSingleWorld() {
+      this.selectedWorldPath = null
+      let savesPath = window.file.getMinecraftPath("saves")
+      let singleFiles = window.file.getAllChildren(savesPath)
+      this.singleWorlds = singleFiles.map(s => window.file.join(savesPath, s))
+
+      this.singleWorldDialog = true
+    },
+    async selectFile() {
+      this.selectedWorldPath = null
+      let selected = await window.file.selectPath()
+      if (selected) {
+        if (!window.file.exists(window.file.join(selected[0], "level.dat"))) {
+          this.setError("ワールドフォルダではありません")
+          return
+        }
+        this.selectedWorldPath = selected[0]
+      }
+    },
   },
   watch: {
     tab() {
@@ -314,6 +346,7 @@ export default defineComponent({
       this.maxMem = 2048
       this.minMem = 0
       this.eula = false
+      this.selectedWorldPath = null
     }
   }
 })
@@ -362,6 +395,7 @@ export default defineComponent({
                   this.server = null
                   this.command = ''
                   this.eula = false
+                  this.selectedWorldPath = null
                 }"
                 :disabled="!githubStore.userData || !githubStore.availableSSH || !githubStore.gitVersion"
             />
@@ -410,6 +444,46 @@ export default defineComponent({
                     hide-details
                     v-model="selectedVersion"
                 />
+              </v-col>
+              <v-col cols="6">
+                <v-btn
+                    color="primary"
+                    size="large"
+                    width="100%"
+                    @click="selectSingleWorld"
+                >シングルワールドを選択</v-btn>
+              </v-col>
+              <v-col cols="6">
+                <v-tooltip location="bottom">
+                  <template v-slot:activator="{props}">
+                    <v-btn
+                        color="primary"
+                        size="large"
+                        width="100%"
+                        @click="selectFile"
+                        v-bind="props"
+                    >フォルダを選択</v-btn>
+                  </template>
+                  配布ワールドなどは解答したものを選択してください
+                </v-tooltip>
+              </v-col>
+              <v-col cols="12" v-if="selectedWorldPath">
+                <div class="d-flex flex-row align-center">
+                  <world-card
+                      :path="selectedWorldPath"
+                      width="100%"/>
+                  <v-btn
+                      color="red"
+                      variant="text"
+                      icon="mdi-close"
+                      size="x-large"
+                      class="ma-2"
+                      @click="selectedWorldPath = null"
+                  ></v-btn>
+                </div>
+              </v-col>
+              <v-col cols="12" v-else>
+                <h3 class="text-center">ワールド指定なし(ワールドを新規生成)</h3>
               </v-col>
               <v-col cols="3">
                 <v-btn size="large" @click="selectPath">フォルダを選択</v-btn>
@@ -664,4 +738,36 @@ export default defineComponent({
       </v-btn>
     </template>
   </v-snackbar>
+
+  <v-dialog
+      v-model="singleWorldDialog"
+      width="800px"
+      transition="slide-y-transition"
+  >
+    <v-card title="シングルワールドを選択">
+      <v-card-text>
+        <v-row justify="center">
+          <world-card
+              class="my-4"
+              v-for="s in singleWorlds"
+              :path="s"
+              hover
+              width="600px"
+              @click="() => {
+                this.selectedWorldPath = s
+                this.singleWorldDialog = false
+              }"/>
+        </v-row>
+      </v-card-text>
+      <v-divider/>
+      <v-card-actions>
+        <v-spacer/>
+        <v-btn
+            variant="text"
+            @click="singleWorldDialog = false"
+            size="large"
+        >閉じる</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>

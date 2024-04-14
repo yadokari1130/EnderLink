@@ -2,6 +2,8 @@
 import { defineComponent } from 'vue'
 import { useRunningStore } from "../store/running";
 import {ICommand} from "../@types/global";
+import ServerProperties from "../datas/serverProperties";
+import axios from "axios";
 
 interface ServerData {
   name: string
@@ -18,7 +20,9 @@ export default defineComponent({
     errorSnackbar: false,
     errorMessage: "",
     snackbar: false,
-    snackbarMessage: ""
+    snackbarMessage: "",
+    port: "",
+    ip: ""
   }),
   methods: {
     setError(errorMessage: string) {
@@ -41,7 +45,7 @@ export default defineComponent({
       window.command.kill()
     },
     copy() {
-      navigator.clipboard.writeText(this.runningStore.url)
+      navigator.clipboard.writeText(this.runningStore.url || `${this.ip}:${this.port}`)
           .then(() => this.setSnackbar("コピーしました"))
           .catch(error => {
             console.log(error)
@@ -52,6 +56,16 @@ export default defineComponent({
       this.snackbarMessage = message
       this.snackbar = true
     },
+  },
+  mounted() {
+    if (this.runningStore.serverData) {
+      let props = new ServerProperties(window.file.join(this.runningStore.serverData.path, "server.properties"), window)
+      this.port = props.props["server-port"].value
+      axios.get("https://api.ipify.org/?format=json")
+          .then(res => {
+            this.ip = res.data.ip
+          })
+    }
   }
 })
 </script>
@@ -64,8 +78,9 @@ export default defineComponent({
     </v-row>
 
     <h2 class="mt-6">状態：{{runningStore.status}}</h2>
-    <div class="d-flex flex-row align-center" v-if="runningStore.url">
-      <h2>URL：{{runningStore.url}}</h2>
+    <div class="d-flex flex-row align-center">
+      <h2 v-if="runningStore.url">URL：{{runningStore.url}}</h2>
+      <h2 v-else>URL：{{ip}}:{{port}}</h2>
       <v-btn icon="mdi-content-copy" variant="text" @click="copy"></v-btn>
     </div>
 

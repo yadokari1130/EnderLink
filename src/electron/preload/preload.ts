@@ -1,13 +1,16 @@
 // All of the Node.js APIs are available in the preload process.
 // It has the same sandbox as a Chrome extension.
 import { contextBridge, ipcRenderer, shell } from 'electron'
-import * as fs from "fs";
+import * as fs from "fs-extra";
 import { join, basename, dirname } from "path";
 import simpleGit from "simple-git";
 import {execSync, exec} from "child_process"
 import * as path from "path";
 import * as child_process from "child_process";
 import ngrok, { Listener } from "@ngrok/ngrok";
+import * as os from "node:os";
+import nbt, { NBTFormat } from "prismarine-nbt"
+import StreamZip from "node-stream-zip"
 
 let proc: child_process.ChildProcessWithoutNullStreams | null = null
 let listener: Listener | null = null
@@ -23,6 +26,10 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 })
 
+contextBridge.exposeInMainWorld("nbt", {
+  parse: async (data: Buffer, nbtType: NBTFormat) => await nbt.parse(data, nbtType),
+})
+
 contextBridge.exposeInMainWorld("store", {
   get: (key: string) => ipcRenderer.invoke("store:get", {key: key}),
   set: (key: string, value: string) => ipcRenderer.invoke("store:set", {key: key, value: value})
@@ -32,7 +39,8 @@ contextBridge.exposeInMainWorld("file", {
   save: (filePath: string, text: string) => fs.writeFileSync(filePath, text, { encoding: 'utf-8' }),
   saveBin: (filePath: string, data: any) => fs.writeFileSync(filePath, Buffer.from(data), "binary"),
   load: (filePath: string, encoding: BufferEncoding) => fs.readFileSync(filePath, {encoding: encoding}),
-  exists: (filePath: string) => fs.existsSync(filePath),
+  loadBuffer: (filePath: string) => fs.readFileSync(filePath),
+  exists: (filePath: string) => fs.pathExistsSync(filePath),
   join: (...paths: string[]) => join(...paths),
   selectPath: () => ipcRenderer.invoke("dialog:selectPath"),
   selectFilePath: (defaultPath: string) => ipcRenderer.invoke("dialog:selectFilePath", {defaultPath: defaultPath}),
@@ -42,14 +50,34 @@ contextBridge.exposeInMainWorld("file", {
     if (!fs.existsSync(filePath)) fs.mkdirSync(filePath)
   },
   rm: (filePath: string) => {
-    if (fs.existsSync(filePath)) fs.rmSync(filePath)
+    if (fs.existsSync(filePath)) fs.removeSync(filePath)
   },
-  rmDir: (dirPath: string) => {
-    if (fs.existsSync(dirPath)) fs.rmSync(dirPath, {recursive: true})
-  },
+  cp: (src: string, dest: string, filter: (src: string, dest: string) => boolean) => fs.copySync(src, dest, {filter: filter}),
+  mv: (src: string, dest: string) => fs.moveSync(src, dest),
   resolve: (filePath: string) => path.resolve(filePath),
   basename: (filePath: string) => basename(filePath),
   dirname: (filePath: string) => dirname(filePath),
+  getAllChildren: (filePath: string) => fs.readdirSync(filePath),
+  getMinecraftPath: (...paths: string[]) => {
+    let result = ""
+    let platform = process.platform
+    if (platform === "win32")
+      result = path.join(process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming"), ".minecraft")
+    else if (platform === "darwin")
+      result = path.join(os.homedir(), "Library", "Application Support", "minecraft")
+    else
+      result = path.join(os.homedir(), ".minecraft")
+
+    if (paths) result = path.join(result, ...paths)
+
+    return result
+  },
+  stream: (filePath: string, onReady: (zip: StreamZip) => void) => {
+    let zip = new StreamZip({file: filePath, storeEntries: true})
+    zip.on("ready", () => {
+      onReady(zip)
+    })
+  },
 });
 
 contextBridge.exposeInMainWorld("token", {

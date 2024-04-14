@@ -6,10 +6,11 @@ import { useGitHubStore } from "../store/github";
 import { useRouter } from "vue-router";
 import { useRunningStore } from "../store/running";
 import ServerProperties from "./ServerProperties.vue";
+import WorldSettings from "./WorldSettings.vue";
 
 export default defineComponent({
   name: "ServerSettings",
-  components: {ServerProperties},
+  components: {WorldSettings, ServerProperties},
   data: () => ({
     serverSettingsStore: useServerSettingsStore(),
     githubStore: useGitHubStore(),
@@ -128,7 +129,7 @@ export default defineComponent({
       this.directoryDialog = false
       this.setOverlay("削除中")
       try {
-        window.file.rmDir(this.serverSettingsStore.serverData.path)
+        window.file.rm(this.serverSettingsStore.serverData.path)
       }
       catch(error) {
         console.log(error)
@@ -154,7 +155,7 @@ export default defineComponent({
       this.repositoryDialog = false
       this.setOverlay("削除中")
       try {
-        window.file.rmDir(this.serverSettingsStore.serverData.path)
+        window.file.rm(this.serverSettingsStore.serverData.path)
       }
       catch(error) {
         console.log(error)
@@ -827,7 +828,7 @@ export default defineComponent({
     </v-window-item>
 
     <v-window-item :value="2">
-      <ServerProperties
+      <server-properties
           @set-overlay="setOverlay"
           @set-error="setError"
           @set-snackbar="setSnackbar"
@@ -835,7 +836,12 @@ export default defineComponent({
     </v-window-item>
 
     <v-window-item :value="3">
-
+      <world-settings
+          @set-overlay="setOverlay"
+          @set-error="setError"
+          @set-snackbar="setSnackbar"
+          @set-commit-log="setCommitLog"
+      />
     </v-window-item>
   </v-window>
 

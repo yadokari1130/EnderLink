@@ -21,6 +21,7 @@ export default defineComponent({
   },
   async beforeCreate() {
     window.file.mkdir(await window.file.getUserDataPath("scripts"))
+    window.file.mkdir(await window.file.getUserDataPath("temp"))
     if (window.shell.getPlatform() === "win32") {
       let shPath = await window.file.getUserDataPath("scripts", "hostbasedAuth.bat")
       if (!window.file.exists(shPath)) await window.file.save(shPath, "@echo off\nssh -T git@github.com")
