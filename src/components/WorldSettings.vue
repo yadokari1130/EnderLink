@@ -7,6 +7,7 @@ import WorldCard from "./WorldCard.vue";
 import ServerProperties from "../datas/serverProperties";
 import DataPackCard from "./DataPackCard.vue";
 import StreamZip from "node-stream-zip";
+import { useRunningStore } from "../store/running";
 
 export default defineComponent({
   name: "WorldSettings",
@@ -23,6 +24,7 @@ export default defineComponent({
     addDataPacks: [],
     datapacks: [],
     changeWorldMode: null,
+    runningStore: useRunningStore()
   }),
   emits: ["setError", "setOverlay", "setSnackbar", "setCommitLog"],
   methods: {
@@ -217,13 +219,20 @@ export default defineComponent({
       </v-col>
 
       <v-col cols="12">
-        <v-btn
-            color="primary"
-            size="large"
-            width="100%"
-            :disabled="changeWorldMode === null"
-            @click="changeWorld"
-        >ワールドを変更</v-btn>
+        <v-tooltip :disabled="!runningStore.isRunning" location="bottom">
+          <template v-slot:activator="{props}">
+            <div class="d-inline-block" v-bind="props" style="width: 100%">
+              <v-btn
+                  color="primary"
+                  size="large"
+                  width="100%"
+                  :disabled="changeWorldMode === null || runningStore.isRunning"
+                  @click="changeWorld"
+              >ワールドを変更</v-btn>
+            </div>
+          </template>
+          <p>起動中のサーバーを停止してください</p>
+        </v-tooltip>
       </v-col>
     </v-row>
   </div>
@@ -251,13 +260,20 @@ export default defineComponent({
 
     <v-row>
       <v-col cols="12">
-        <v-btn
-          color="primary"
-          size="large"
-          width="100%"
-          @click="applyDataPack"
-          :disabled="addDataPacks.length === 0 && deleteDataPacks.length === 0"
-        >データパックを適用</v-btn>
+        <v-tooltip :disabled="!runningStore.isRunning" location="bottom">
+          <template v-slot:activator="{props}">
+            <div class="d-inline-block" v-bind="props" style="width: 100%">
+              <v-btn
+                  color="primary"
+                  size="large"
+                  width="100%"
+                  @click="applyDataPack"
+                  :disabled="addDataPacks.length === 0 && deleteDataPacks.length === 0"
+              >データパックを適用</v-btn>
+            </div>
+          </template>
+          <p>起動中のサーバーを停止してください</p>
+        </v-tooltip>
       </v-col>
     </v-row>
 

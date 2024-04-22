@@ -11,9 +11,13 @@ import ngrok, { Listener } from "@ngrok/ngrok";
 import * as os from "node:os";
 import nbt, { NBTFormat } from "prismarine-nbt"
 import StreamZip from "node-stream-zip"
+import { Connection, install, bin, tunnel } from "cloudflared"
+import { ChildProcess } from "child_process";
 
 let proc: child_process.ChildProcessWithoutNullStreams | null = null
 let listener: Listener | null = null
+let tunnelData: {url: Promise<string>, connections: Promise<Connection>[], child: ChildProcess, stop: ChildProcess["kill"]} | null = null
+let accessProc: child_process.ChildProcessWithoutNullStreams | null = null
 
 window.addEventListener('DOMContentLoaded', () => {
   const replaceText = (selector: any, text: any) => {
@@ -103,6 +107,26 @@ contextBridge.exposeInMainWorld("ngrok", {
   close: () => listener?.close(),
 })
 
+contextBridge.exposeInMainWorld("cloudflared", {
+  getUseCloudflared: () => ipcRenderer.invoke("store:get", {key: "useCloudflared"}),
+  setUseCloudflared: (useCloudflared: boolean) => ipcRenderer.invoke("store:set", {key: "useCloudflared", value: useCloudflared}),
+  tunnel: async (port: string) => {
+    tunnelData = tunnel({"--url": `tcp://localhost:${port}`})
+    // await Promise.all(tunnelData.connections)
+    return await tunnelData.url
+  },
+  getUrl: async () => await tunnelData?.url,
+  closeTunnel: () => tunnelData?.stop(),
+  access: (url: string) => accessProc = child_process.spawn(bin, ["access", "tcp", "--hostname", url, "--url", "localhost:25565"]),
+  closeAccess: () => {
+    accessProc?.kill()
+    accessProc = null
+  },
+  getBin: () => bin,
+  install: async () => await install(bin),
+  isAccessing: () => !!accessProc
+})
+
 contextBridge.exposeInMainWorld("shell", {
   openExternal: (url: string) => shell.openExternal(url),
   showItemInFolder: (path: string) => shell.showItemInFolder(path),
@@ -111,7 +135,8 @@ contextBridge.exposeInMainWorld("shell", {
 })
 
 contextBridge.exposeInMainWorld("server", {
-  waitCallback: (url: string) => ipcRenderer.invoke("server:waitCallback", {url: url})
+  waitCallback: (url: string) => ipcRenderer.invoke("server:waitCallback", {url: url}),
+  get: (url: string) => ipcRenderer.invoke("axios:get", {url: url}),
 })
 
 contextBridge.exposeInMainWorld("win", {
@@ -141,7 +166,6 @@ contextBridge.exposeInMainWorld("git", {
   init: async (path: string, email: string, username: string, origin: string) => {
     const git = simpleGit(path)
     await git.init()
-    // await git.checkout("main", {"-b": null})
     await git.raw("switch", "-c", "main")
     await git.addConfig("user.email", email)
     await git.addConfig("user.name", username)
@@ -194,5 +218,9 @@ contextBridge.exposeInMainWorld("git", {
   revert: async (path: string, hash: string) => {
     const git = simpleGit(path)
     await git.raw("revert", "-n", `${hash}...HEAD`)
+  },
+  rmCache: async (path: string) => {
+    const git = simpleGit(path)
+    await git.raw("rm", "-r", "--cached", ".")
   }
 })

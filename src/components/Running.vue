@@ -56,6 +56,16 @@ export default defineComponent({
       this.snackbarMessage = message
       this.snackbar = true
     },
+    tweet() {
+      let ipTweet = `${this.ip}:${this.port}`
+      let cfTweet = `${this.runningStore.url}\nEnderLinkをインストールし、以下を参考に接続してください\nhttps://github.com/yadokari1130/EnderLink/blob/master/CONNECT_CLOUDFLARE_TUNNEL`
+      let params = {
+        url: "https://github.com/yadokari1130/EnderLink/releases/latest/",
+        text: `Minecraftサーバーを公開しました！\nこのアドレスから参加：${this.runningStore.url ? cfTweet : ipTweet}`,
+        hashtags: "Minecraft,EnderLink"
+      }
+      window.shell.openExternal(`https://twitter.com/share?${Object.entries(params).reduce((acc, cur) => [`${acc[0]}${cur[0]}=${encodeURIComponent(cur[1])}&`, ""], ["", ""])}`)
+    }
   },
   mounted() {
     if (this.runningStore.serverData) {
@@ -82,6 +92,7 @@ export default defineComponent({
       <h2 v-if="runningStore.url">URL：{{runningStore.url}}</h2>
       <h2 v-else>URL：{{ip}}:{{port}}</h2>
       <v-btn icon="mdi-content-copy" variant="text" @click="copy"></v-btn>
+      <v-btn @click="tweet" size="large" color="primary" class="ml-6">ツイートする</v-btn>
     </div>
 
     <h2 class="mt-6 ma-1">サーバーログ</h2>

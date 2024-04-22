@@ -6,6 +6,8 @@ import { useNgrokStore } from "../store/ngrok";
 import { useRunningStore } from "../store/running";
 import { Terminal } from "@xterm/xterm"
 import "@xterm/xterm/css/xterm.css"
+import { useCloudflaredStore } from "../store/cloudflared";
+import cloudflared from "cloudflared";
 
 export default defineComponent({
   name: "Settings",
@@ -76,7 +78,7 @@ export default defineComponent({
     },
     async save() {
       try {
-        await this.ngrokStore.save(window)
+        await this.cloudflaredStore.save(window)
       }
       catch (error) {
         console.log(error)
@@ -124,7 +126,22 @@ export default defineComponent({
       this.term.write(this.command)
       window.command.write(this.command)
       this.command = ""
-    }
+    },
+    async updateCloudflared(install: boolean) {
+      this.setOverlay(install ? "インストール中" : "アップデート中")
+      try {
+        await window.cloudflared.install()
+        await new Promise(resolve => setTimeout(resolve, 500))
+        await this.cloudflaredStore.fetchData(window)
+      }
+      catch (error) {
+        console.log(error)
+        this.setError(`Cloudlfaredの${install ? "インストール" : "アップデート"}に失敗しました`)
+        return
+      }
+
+      this.setSnackbar(`Cloudflaredを${install ? "インストール" : "アップデート"}しました`)
+    },
   },
   data: (): {
     errorMessage: string,
@@ -143,6 +160,7 @@ export default defineComponent({
     installing: boolean,
     command: string,
     term: Terminal | null,
+    cloudflaredStore: any,
   } => ({
     errorMessage: "",
     errorSnackbar: false,
@@ -160,6 +178,7 @@ export default defineComponent({
     installing: false,
     command: "",
     term: null,
+    cloudflaredStore: useCloudflaredStore()
   }),
   async created() {
     await this.githubStore.fetchData(window)
@@ -243,39 +262,31 @@ export default defineComponent({
   </div>
 
   <h2 class="ma-4 mt-16">
-    Ngrok(ポート開放不要機能)
+    Cloudflared(ポート開放不要機能)
     <v-tooltip location="bottom">
       <template v-slot:activator="{props}">
         <v-icon v-bind="props" class="ml-4">mdi-help-circle-outline</v-icon>
       </template>
       <p>ポート開放をせずにサーバーを公開することができるアプリケーションです</p>
-      <p>使うためにはNgrokのユーザー登録が必要です</p>
+      <p>使うためにはサーバー参加者もEnderLinkをインストールし、接続を行う必要があります</p>
     </v-tooltip>
   </h2>
   <div class="border rounded pa-4">
     <v-checkbox
         hide-details
-        label="Ngrok(ポート開放不要機能)を使う"
+        label="Cloudflared(ポート開放不要機能)を使う"
         @change="save"
-        v-model="ngrokStore.useNgrok"
+        v-model="cloudflaredStore.useCloudflared"
         class="mb-4"
     />
-    <v-text-field
-        variant="outlined"
-        label="トークン"
-        hide-details
-        v-model="ngrokStore.ngrokToken"
-        @input="save"
-    >
-      <template v-slot:append>
-        <v-btn
-            size="large"
-            color="primary"
-            @click="openExternal('https://dashboard.ngrok.com/get-started/your-authtoken')"
-            append-icon="mdi-open-in-new"
-        >トークンを取得</v-btn>
-      </template>
-    </v-text-field>
+    <h3 class="mb-2">Cloudflared：{{`インストール済み(${cloudflaredStore.cloudflaredVersion})` || "未インストール"}}</h3>
+    <v-btn
+        size="large"
+        color="primary"
+        @click="() => updateCloudflared(!cloudflaredStore.cloudflaredVersion)"
+        width="100%"
+        class="mb-4"
+    >Cloudflaredを{{ cloudflaredStore.cloudflaredVersion ? "アップデート" : "インストール" }}</v-btn>
   </div>
 
   <h2 class="ma-4 mt-16">アプリ設定</h2>

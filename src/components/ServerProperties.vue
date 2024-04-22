@@ -7,22 +7,20 @@ import { useGitHubStore } from "../store/github";
 
 export default defineComponent({
   name: "ServerProperties",
+  props: {
+    serverProps: ServerProperties | null
+  },
   data: (): {
-    props: ServerProperties | null,
     serverSettingsStore: any,
     search: string,
     runningStore: any,
     githubStore: any,
   } => ({
-    props: null,
     serverSettingsStore: useServerSettingsStore(),
     search: "",
     runningStore: useRunningStore(),
     githubStore: useGitHubStore(),
   }),
-  mounted() {
-    this.props = new ServerProperties(window.file.join(this.serverSettingsStore.serverData.path, "server.properties"), window)
-  },
   emits: ["setError", "setOverlay", "setSnackbar"],
   methods: {
     async save() {
@@ -38,7 +36,7 @@ export default defineComponent({
       }
 
       try {
-        this.props.save(window)
+        this.serverProps.save(window)
       }
       catch (error) {
         console.log(error)
@@ -69,8 +67,8 @@ export default defineComponent({
       variant="outlined"
       class="my-2"
   />
-  <div class="mb-16 mt-8">
-    <div class="mb-8" v-if="props" v-for="[key, value] of Object.entries(this.props.props).sort((a, b) => a[0].localeCompare(b[0]))">
+  <div class="my-8" ref="properties">
+    <div class="mb-8" v-if="serverProps" v-for="[key, value] of Object.entries(this.serverProps.props).sort((a, b) => a[0].localeCompare(b[0]))">
       <div  v-if="search === '' || key.includes(search)">
         <v-row align="center">
           <v-col cols="3"><h4>{{key}}</h4></v-col>
@@ -107,22 +105,24 @@ export default defineComponent({
         <p class="text-medium-emphasis" v-text="value.description" style="white-space: pre-wrap"/>
       </div>
     </div>
-  </div>
 
-  <v-tooltip location="top" :disabled="!runningStore.isRunning">
-    <template v-slot:activator="{props}">
-      <div class="d-inline-block" style="width: 100%;" v-bind="props">
-        <v-btn
-            @click="save"
-            color="primary"
-            size="large"
-            width="100%"
-            :disabled="runningStore.isRunning"
-        >保存</v-btn>
-      </div>
-    </template>
-    <p>起動中のサーバーを停止してください</p>
-  </v-tooltip>
+    <v-layout-item model-value position="bottom" size="80" :style="`width: ${this.$refs?.properties?.clientWidth || 100}px; background-color: white`" class="ml-16 mr-6">
+      <v-tooltip location="top" :disabled="!runningStore.isRunning">
+        <template v-slot:activator="{props}">
+          <div class="d-inline-block" style="width: 100%;" v-bind="props">
+            <v-btn
+                @click="save"
+                color="primary"
+                size="large"
+                width="100%"
+                :disabled="runningStore.isRunning"
+            >保存</v-btn>
+          </div>
+        </template>
+        <p>起動中のサーバーを停止してください</p>
+      </v-tooltip>
+    </v-layout-item>
+  </div>
 </template>
 
 <style scoped>

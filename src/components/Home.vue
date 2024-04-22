@@ -7,6 +7,7 @@ import { useServerSettingsStore } from "../store/server-settings";
 import axios from "axios";
 import { compare } from "compare-versions";
 import WorldCard from "./WorldCard.vue";
+import { useCloudflaredStore } from "../store/cloudflared";
 
 export default defineComponent({
   name: "Home",
@@ -47,7 +48,11 @@ export default defineComponent({
     selectedVersion: 0,
     eula: false,
     selectedWorldPath: "",
-    singleWorldDialog: false
+    singleWorldDialog: false,
+    singleWorlds: [],
+    accessDialog: false,
+    accessUrl: "",
+    cloudflaredStore: useCloudflaredStore()
   }),
   async mounted() {
     this.serversPath = await window.file.getUserDataPath("servers.json")
@@ -338,6 +343,35 @@ export default defineComponent({
         this.selectedWorldPath = selected[0]
       }
     },
+    access() {
+      this.accessDialog = false
+      this.setOverlay("接続中")
+
+      try {
+        this.cloudflaredStore.access(window)
+      }
+      catch (error) {
+        console.log(error)
+        this.setError("接続に失敗しました\n基本設定画面からCloudflaredのアップデートを試してみてください")
+        return
+      }
+
+      this.setSnackbar("接続しました\nMinecraft内で「localhost」と入力するとサーバーに接続することができます")
+    },
+    closeAccess() {
+      this.setOverlay("切断中")
+
+      try {
+        this.cloudflaredStore.closeAccess(window)
+      }
+      catch (error) {
+        console.log(error)
+        this.setError("切断に失敗しました")
+        return
+      }
+
+      this.setSnackbar("切断しました")
+    },
   },
   watch: {
     tab() {
@@ -375,7 +409,37 @@ export default defineComponent({
     <div style="width: 600px" v-if="Object.keys(datas).length % 2 === 1" class="my-6"/>
   </v-row>
 
-  <v-layout-item model-value position="bottom" class="text-end" size="120">
+  <v-layout-item model-value position="bottom" class="text-end" size="180">
+    <div class="ma-4 mx-12">
+      <v-tooltip
+        location="left"
+        :disabled="!!cloudflaredStore.cloudflaredVersion"
+        v-if="!cloudflaredStore.isAccessing"
+      >
+        <template v-slot:activator="{ props }">
+          <div class="d-inline-block" v-bind="props">
+            <v-btn
+                icon="mdi-lan-connect"
+                size="x-large"
+                color="primary"
+                elevation="8"
+                @click="accessDialog = true; accessUrl = ''"
+                :disabled="!cloudflaredStore.cloudflaredVersion"
+            />
+          </div>
+        </template>
+        <p>Cloudflaredがインストールされていません</p>
+        <p>基本設定画面からCloudflaredをインストールしてください</p>
+      </v-tooltip>
+      <v-btn
+          icon="mdi-lan-disconnect"
+          size="x-large"
+          color="error"
+          elevation="8"
+          @click="closeAccess"
+          v-else
+      />
+    </div>
     <div class="ma-4 mx-12">
       <v-tooltip
           location="left"
@@ -767,6 +831,41 @@ export default defineComponent({
             @click="singleWorldDialog = false"
             size="large"
         >閉じる</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-dialog
+      v-model="accessDialog"
+      width="800px"
+      transition="slide-y-transition"
+  >
+    <v-card title="サーバーに接続">
+      <v-card-text>
+        <v-row>
+          <v-col cols="12">
+            <v-text-field
+                v-model="accessUrl"
+                label="サーバーアドレス"
+                variant="outlined"
+                @keydown.enter="access"
+            />
+          </v-col>
+        </v-row>
+      </v-card-text>
+      <v-divider/>
+      <v-card-actions>
+        <v-spacer/>
+        <v-btn
+            variant="text"
+            @click="accessDialog = false"
+            size="large"
+        >閉じる</v-btn>
+        <v-btn
+          variant="text"
+          @click="access"
+          size="large"
+        >接続</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

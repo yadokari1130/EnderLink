@@ -4,18 +4,21 @@ import { useGitHubStore } from "./store/github";
 import { defineComponent } from "vue";
 import { useNgrokStore } from "./store/ngrok";
 import { useRunningStore } from "./store/running";
+import { useCloudflaredStore } from "./store/cloudflared";
 
 export default defineComponent({
   data: () => ({
     githubStore: useGitHubStore(),
     ngrokStore: useNgrokStore(),
     runningStore: useRunningStore(),
+    cloudflaredStore: useCloudflaredStore(),
     colors: {"起動中": "green", "終了中": "red", "停止済み": "grey", "エラー": "red"}
   }),
   async mounted() {
     await this.ngrokStore.fetchData(window)
     await this.githubStore.init(window)
     await this.githubStore.fetchData(window)
+    await this.cloudflaredStore.fetchData(window)
 
     await router.push("/")
   },

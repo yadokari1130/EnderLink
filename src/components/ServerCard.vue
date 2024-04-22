@@ -60,7 +60,7 @@ export default defineComponent({
       else if (result === "#loadError") this.$emit("setError", "状態の読み込みに失敗しました")
       else if (result === "#saveError") this.$emit("setError", "状態の保存に失敗しました")
       else if (result === "#uploadError") this.$emit("setError", "状態の同期に失敗しました")
-      else if (result === "#ngrokError") this.$emit("setError", "Ngrokの起動に失敗しました\nNgrokの設定を見直してください")
+      else if (result === "#cloudflaredError") this.$emit("setError", "Cloudflaredの起動に失敗しました\nCloudflaredのアップデートを試してみてください")
       else this.$emit("setError", `${result}さんが起動中です`)
     },
   }

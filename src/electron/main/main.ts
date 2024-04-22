@@ -4,6 +4,7 @@ import express from 'express';
 import ElectronStore from "electron-store";
 import {autoUpdater} from "electron-updater";
 import * as http from "http";
+import axios from "axios";
 
 interface StoreType {
     access_token: Buffer | undefined,
@@ -107,6 +108,7 @@ app.whenReady().then(() => {
     ipcMain.handle("ngrok:setUseNgrok", (event, args) => setUseNgrok(args.useNgrok))
     ipcMain.handle("store:get", (event, args) => getStore(args.key))
     ipcMain.handle("store:set", (event, args) => setStore(args.key, args.value))
+    ipcMain.handle("axios:get", (event, args) => axiosGet(args.url))
     createWindow()
     app.on('activate', function () {
         // On macOS it's common to re-create a window in the app when the
@@ -202,4 +204,8 @@ function getStore(key: string) {
 
 function setStore(key: string, value: string) {
     store.set(key, value)
+}
+
+async function axiosGet(url: string) {
+    return JSON.stringify((await axios.get(url)).data)
 }

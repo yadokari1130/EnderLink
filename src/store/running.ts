@@ -3,6 +3,7 @@ import {ServerData} from "../components/ServerCard.vue"
 import { useGitHubStore } from "./github";
 import { useNgrokStore } from "./ngrok";
 import { Listener } from "@ngrok/ngrok"
+import { useCloudflaredStore } from "./cloudflared";
 
 export const useRunningStore = defineStore("running", {
     state: () => ({
@@ -13,7 +14,8 @@ export const useRunningStore = defineStore("running", {
         code: null,
         status: "停止済み",
         ngrokStore: useNgrokStore(),
-        url: null
+        url: null,
+        cloudflaredStore: useCloudflaredStore()
     } as {
         log: string,
         serverData: ServerData | null,
@@ -22,13 +24,14 @@ export const useRunningStore = defineStore("running", {
         code: number | null,
         status: "停止済み" | "終了中" | "起動中" | "エラー",
         ngrokStore: any,
-        url: string | null | undefined
+        url: string | null | undefined,
+        cloudflaredStore: any
     }),
     actions: {
         add(text: string) {
             this.log += text
         },
-        async run(serverData: ServerData, icon: string, window: Window): Promise<"#runningError" | "#downloadError" | "#loadError" | "#githubError" | "#saveError" | "#uploadError" | "#ngrokError" | string | undefined> {
+        async run(serverData: ServerData, icon: string, window: Window): Promise<"#runningError" | "#downloadError" | "#loadError" | "#githubError" | "#saveError" | "#uploadError" | "#cloudflaredError" | string | undefined> {
             if (this.isRunning) return "#runningError"
 
             this.isRunning = true
@@ -67,20 +70,19 @@ export const useRunningStore = defineStore("running", {
                 return "#githubError"
             }
 
-            if (this.ngrokStore.useNgrok) {
+            if (this.cloudflaredStore.useCloudflared) {
                 try {
                     let port = window.file.load(window.file.join(serverData?.path || "", "server.properties"), "utf-8")
                     let matched = port.match(/server-port=([0-9]+)/)
                     if (!matched || !matched[1]) return "#loadError"
 
-                    await window.ngrok.forward(this.ngrokStore.ngrokToken, matched[1]);
-                    this.url = (await window.ngrok.getUrl())?.replace("tcp://", "")
+                    this.url = (await window.cloudflared.tunnel(port)).replace("https://", "")
                 }
                 catch (error) {
                     console.log(error)
                     this.isRunning = false
                     this.status = "エラー"
-                    return "#ngrokError"
+                    return "#cloudflaredError"
                 }
             }
 
@@ -120,7 +122,7 @@ export const useRunningStore = defineStore("running", {
                 data => this.add(data),
                 async code => {
                     this.status = "終了中"
-                    if (this.ngrokStore.useNgrok) await window.ngrok.close()
+                    if (this.cloudflaredStore.useCloudflared) window.cloudflared.closeTunnel()
                     window.file.save(statusPath, "#stopping")
                     await window.git.upload(serverData.path, "サーバー終了")
 

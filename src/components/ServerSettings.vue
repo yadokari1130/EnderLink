@@ -7,10 +7,12 @@ import { useRouter } from "vue-router";
 import { useRunningStore } from "../store/running";
 import ServerProperties from "./ServerProperties.vue";
 import WorldSettings from "./WorldSettings.vue";
+import WhiteListSettings from "./WhiteListSettings.vue";
+import ServerProperties_ from "../datas/serverProperties"
 
 export default defineComponent({
   name: "ServerSettings",
-  components: {WorldSettings, ServerProperties},
+  components: {WhiteListSettings, WorldSettings, ServerProperties},
   data: () => ({
     serverSettingsStore: useServerSettingsStore(),
     githubStore: useGitHubStore(),
@@ -43,7 +45,9 @@ export default defineComponent({
     deleteCollaboratorDialog: false,
     deletedCollaborator: [],
     status: "",
-    tab: 1
+    tab: 1,
+    gitignore: "",
+    serverProps: null
   }),
   async mounted() {
     this.serversPath = await window.file.getUserDataPath("servers.json")
@@ -58,6 +62,9 @@ export default defineComponent({
     this.setCollaborators()
         .catch(error => console.log(error))
     this.setStatus()
+    if (window.file.exists(window.file.join(this.serverSettingsStore.serverData.path, ".gitignore")))
+      this.gitignore = window.file.load(window.file.join(this.serverSettingsStore.serverData.path, ".gitignore"), "utf-8")
+    this.serverProps = new ServerProperties_(window.file.join(this.serverSettingsStore.serverData.path, "server.properties"), window)
   },
   methods: {
     setStatus() {
@@ -410,7 +417,7 @@ export default defineComponent({
       else if (result === "#loadError") this.setError("状態の読み込みに失敗しました")
       else if (result === "#saveError") this.setError("状態の保存に失敗しました")
       else if (result === "#uploadError") this.setError("状態の同期に失敗しました")
-      else if (result === "#ngrokError") this.setError("Ngrokの起動に失敗しました\nNgrokの設定を見直してください")
+      else if (result === "#cloudflaredError") this.$emit("setError", "Cloudflaredの起動に失敗しました\nCloudflaredのアップデートを試してみてください")
       else this.setError(`${result}さんが起動中です`)
     },
     async stop() {
@@ -454,6 +461,31 @@ export default defineComponent({
       }
 
       if (notFound) this.setError("起動コマンドが見つかりませんでした")
+    },
+    async updateGitignore() {
+      this.setOverlay("更新中")
+
+      try {
+        window.file.save(window.file.join(this.serverSettingsStore.serverData.path, ".gitignore"), this.gitignore)
+      }
+      catch (error) {
+        console.log(error)
+        this.setError("ファイルの保存に失敗しました")
+        return
+      }
+
+      try {
+        await window.git.rmCache(this.serverSettingsStore.serverData.path)
+        await window.git.upload(this.serverSettingsStore.serverData.path, "同期しないファイルの更新")
+      }
+      catch (error) {
+        console.log(error)
+        this.setError("データの同期に失敗しました")
+        return
+      }
+
+      await this.setCommitLog()
+      this.setSnackbar("更新しました")
     }
   },
   computed: {
@@ -482,9 +514,10 @@ export default defineComponent({
       color="primary"
   >
     <v-row justify="space-evenly">
-      <v-col cols="4"><v-tab :value="1" width="100%" prepend-icon="mdi-cog"><h3>基本設定</h3></v-tab></v-col>
-      <v-col cols="4"><v-tab :value="2" width="100%" prepend-icon="mdi-file-cog-outline"><h3>プロパティ</h3></v-tab></v-col>
-      <v-col cols="4"><v-tab :value="3" width="100%" prepend-icon="mdi-earth"><h3>ワールド・データパック</h3></v-tab></v-col>
+      <v-col cols="3"><v-tab :value="1" width="100%" prepend-icon="mdi-cog"><h3>基本設定</h3></v-tab></v-col>
+      <v-col cols="3"><v-tab :value="2" width="100%" prepend-icon="mdi-file-cog-outline"><h3>プロパティ</h3></v-tab></v-col>
+      <v-col cols="3"><v-tab :value="3" width="100%" prepend-icon="mdi-earth"><h3>ワールド・データパック</h3></v-tab></v-col>
+      <v-col cols="3"><v-tab :value="4" width="100%" prepend-icon="mdi-account-check"><h3>ホワイトリスト</h3></v-tab></v-col>
     </v-row>
   </v-tabs>
 
@@ -776,6 +809,32 @@ export default defineComponent({
           </v-row>
         </div>
 
+        <v-expansion-panels class="mt-16">
+          <v-expansion-panel>
+            <v-expansion-panel-title>
+              <h2>高度な設定</h2>
+            </v-expansion-panel-title>
+            <v-expansion-panel-text>
+              <h2 class="ma-4">
+                同期しないファイル
+                <v-tooltip location="bottom">
+                  <template v-slot:activator="{props}">
+                    <v-icon v-bind="props" class="ml-4">mdi-help-circle-outline</v-icon>
+                  </template>
+                  <p>ファイルの指定には.gitignoreの記法に従ってください</p>
+                  <p>ここに指定したものは今後同期されなくなるだけであり、ファイルが削除されることはありません</p>
+                </v-tooltip>
+              </h2>
+              <div class="pa-4 rounded border">
+                <v-textarea v-model="gitignore" variant="outlined"/>
+                <v-btn size="large" color="primary" width="100%" @click="updateGitignore">
+                  保存
+                </v-btn>
+              </div>
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+        </v-expansion-panels>
+
         <v-row class="mt-16">
           <v-col cols="6">
             <v-tooltip location="bottom">
@@ -832,6 +891,7 @@ export default defineComponent({
           @set-overlay="setOverlay"
           @set-error="setError"
           @set-snackbar="setSnackbar"
+          :serverProps="serverProps"
       />
     </v-window-item>
 
@@ -841,6 +901,16 @@ export default defineComponent({
           @set-error="setError"
           @set-snackbar="setSnackbar"
           @set-commit-log="setCommitLog"
+      />
+    </v-window-item>
+
+    <v-window-item :value="4">
+      <white-list-settings
+          @set-overlay="setOverlay"
+          @set-error="setError"
+          @set-snackbar="setSnackbar"
+          @set-commit-log="setCommitLog"
+          :serverProps="serverProps"
       />
     </v-window-item>
   </v-window>

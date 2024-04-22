@@ -60,6 +60,7 @@
     "@types/express": "^4.17.21",
     "@xterm/xterm": "^5.4.0",
     "axios": "^1.6.7",
+    "cloudflared": "^0.5.1",
     "compare-versions": "^6.1.0",
     "electron-store": "^8.1.0",
     "electron-updater": "^6.1.8",

@@ -16,6 +16,7 @@ declare global {
         command: ICommand
         git: IGit
         ngrok: INgrok
+        cloudflared: ICloudflared
         nbt: INBT
     }
 }
@@ -63,6 +64,19 @@ export interface INgrok {
     close: () => Promise<any>
 }
 
+export interface ICloudflared {
+    getUseCloudflared: () => Promise<any>
+    setUseCloudflared: (useCloudflared: boolean) => Promise<any>
+    tunnel: (port: string) => Promise<string>
+    getUrl: () => Promise<string | undefined>
+    closeTunnel: () => boolean | undefined
+    access: (url: string) => ChildProcessWithoutNullStreams
+    closeAccess: () => boolean | undefined
+    getBin: () => string
+    install: () => Promise<string>
+    isAccessing: () => boolean
+}
+
 export interface IShell {
     openExternal: (url: string) => Promise<void>
     showItemInFolder: (path: string) => void
@@ -72,6 +86,7 @@ export interface IShell {
 
 export interface IServer {
     waitCallback: (url: string) => Promise<any>
+    get: (url: string) => Promise<string>
 }
 
 export interface IWin {
@@ -102,4 +117,5 @@ export interface IGit {
     status: (path: string) => Promise<SimpleGit & Promise<resp.StatusResult>>
     commit: (path: string, message: string) => Promise<void>
     revert: (path: string, hash: string) => Promise<void>
+    rmCache: (path: string) => Promise<void>
 }
