@@ -392,9 +392,13 @@ export default defineComponent({
     </v-col>
   </v-row>
   <v-row v-if="Object.keys(datas).length === 0">
-    <v-col>
+    <v-col cols="12">
       <p>サーバーがありません</p>
-      <p>右下の「+」ボタンからサーバーを追加してください</p>
+      <p>右下の「<v-icon>mdi-plus</v-icon>」ボタンからサーバーを追加してください</p>
+    </v-col>
+    <v-col class="mt-2" cols="12">
+      <p>他サーバーに接続する場合は右下の「<v-icon>mdi-lan-connect</v-icon>」ボタンを押し、</p>
+      <p>表示されたウィンドウにサーバーアドレスを入力して接続してください</p>
     </v-col>
   </v-row>
 
