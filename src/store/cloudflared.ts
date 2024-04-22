@@ -14,7 +14,12 @@ export const useCloudflaredStore = defineStore("cloudflared", {
     actions: {
         async fetchData(window: Window) {
             this.useCloudflared = await window.cloudflared.getUseCloudflared()
-            this.cloudflaredVersion = window.command.execSync(`${window.cloudflared.getBin()} --version`)
+            try {
+                this.cloudflaredVersion = window.command.execSync(`${window.cloudflared.getBin()} --version`)
+            }
+            catch {
+                this.cloudflaredVersion = null
+            }
         },
         async save(window: Window) {
             await window.cloudflared.setUseCloudflared(this.useCloudflared)

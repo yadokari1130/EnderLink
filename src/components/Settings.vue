@@ -279,7 +279,7 @@ export default defineComponent({
         v-model="cloudflaredStore.useCloudflared"
         class="mb-4"
     />
-    <h3 class="mb-2">Cloudflared：{{`インストール済み(${cloudflaredStore.cloudflaredVersion})` || "未インストール"}}</h3>
+    <h3 class="mb-2">Cloudflared：{{cloudflaredStore.cloudflaredVersion ? `インストール済み(${cloudflaredStore.cloudflaredVersion})` : "未インストール"}}</h3>
     <v-btn
         size="large"
         color="primary"
