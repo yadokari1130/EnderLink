@@ -117,13 +117,13 @@ contextBridge.exposeInMainWorld("cloudflared", {
   },
   getUrl: async () => await tunnelData?.url,
   closeTunnel: () => tunnelData?.stop(),
-  access: (url: string) => accessProc = child_process.spawn(bin, ["access", "tcp", "--hostname", url, "--url", "localhost:25565"]),
+  access: (url: string) => accessProc = child_process.spawn(bin.replace("app.asar", "app.asar.unpack"), ["access", "tcp", "--hostname", url, "--url", "localhost:25565"]),
   closeAccess: () => {
     accessProc?.kill()
     accessProc = null
   },
-  getBin: () => bin,
-  install: async () => await install(bin),
+  getBin: () => bin.replace("app.asar", "app.asar.unpack"),
+  install: async () => await install(bin.replace("app.asar", "app.asar.unpack")),
   isAccessing: () => !!accessProc
 })
 
