@@ -183,8 +183,13 @@ export default defineComponent({
   async created() {
     await this.githubStore.fetchData(window)
     await this.ngrokStore.fetchData(window)
+    await this.cloudflaredStore.fetchData(window)
     this.isWin = window.shell.getPlatform() === "win32"
     this.windowMaximize = (await window.store.get("windowMaximize")) === "true"
+    if (!this.cloudflaredStore.cloudflaredVersion) {
+      this.cloudflaredStore.useCloudflared = false
+      await this.save()
+    }
   }
 })
 </script>
@@ -278,6 +283,7 @@ export default defineComponent({
         @change="save"
         v-model="cloudflaredStore.useCloudflared"
         class="mb-4"
+        :disabled="!cloudflaredStore.cloudflaredVersion"
     />
     <h3 class="mb-2">Cloudflared：{{cloudflaredStore.cloudflaredVersion ? `インストール済み(${cloudflaredStore.cloudflaredVersion})` : "未インストール"}}</h3>
     <v-btn
