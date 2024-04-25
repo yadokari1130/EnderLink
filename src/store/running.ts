@@ -76,7 +76,7 @@ export const useRunningStore = defineStore("running", {
                     let matched = port.match(/server-port=([0-9]+)/)
                     if (!matched || !matched[1]) return "#loadError"
 
-                    this.url = (await window.cloudflared.tunnel(port)).replace("https://", "")
+                    this.url = (await window.cloudflared.tunnel(matched[1])).replace("https://", "")
                 }
                 catch (error) {
                     console.log(error)

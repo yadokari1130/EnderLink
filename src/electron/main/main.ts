@@ -5,6 +5,7 @@ import ElectronStore from "electron-store";
 import {autoUpdater} from "electron-updater";
 import * as http from "http";
 import axios from "axios";
+import * as path from "path";
 
 interface StoreType {
     access_token: Buffer | undefined,
@@ -41,6 +42,8 @@ function selectFilePath(defaultPath: string) {
 }
 
 function createWindow() {
+    process.env.CLOUDFLARED_BIN = path.join(app.getPath("userData"), "cloudflared", process.platform === "win32" ? "cloudflared.exe" : "cloudflared")
+
     // Create the browser window.
     mainWindow = new BrowserWindow({
         webPreferences: {

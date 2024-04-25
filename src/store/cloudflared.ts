@@ -25,8 +25,8 @@ export const useCloudflaredStore = defineStore("cloudflared", {
         async save(window: Window) {
             await window.cloudflared.setUseCloudflared(this.useCloudflared)
         },
-        access(window: Window) {
-            window.cloudflared.access(this.accessUrl)
+        access(accessUrl: string, window: Window) {
+            window.cloudflared.access(accessUrl)
             this.isAccessing = true
         },
         closeAccess(window: Window) {

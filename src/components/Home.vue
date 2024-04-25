@@ -348,7 +348,7 @@ export default defineComponent({
       this.setOverlay("接続中")
 
       try {
-        this.cloudflaredStore.access(window)
+        this.cloudflaredStore.access(this.accessUrl, window)
       }
       catch (error) {
         console.log(error)
@@ -532,7 +532,7 @@ export default defineComponent({
                         v-bind="props"
                     >フォルダを選択</v-btn>
                   </template>
-                  配布ワールドなどは解答したものを選択してください
+                  配布ワールドなどは解凍したものを選択してください
                 </v-tooltip>
               </v-col>
               <v-col cols="12" v-if="selectedWorldPath">

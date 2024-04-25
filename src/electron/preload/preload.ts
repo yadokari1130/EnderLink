@@ -112,18 +112,24 @@ contextBridge.exposeInMainWorld("cloudflared", {
   setUseCloudflared: (useCloudflared: boolean) => ipcRenderer.invoke("store:set", {key: "useCloudflared", value: useCloudflared}),
   tunnel: async (port: string) => {
     tunnelData = tunnel({"--url": `tcp://localhost:${port}`})
-    // await Promise.all(tunnelData.connections)
+    // tunnelData?.child?.stdout?.on("data", (data: string) => console.log(Buffer.from(data, "utf-8").toString()))
+    // tunnelData?.child?.stderr?.on("data", (data: string) => console.log(Buffer.from(data, "utf-8").toString()))
+    await Promise.all(tunnelData.connections)
     return await tunnelData.url
   },
   getUrl: async () => await tunnelData?.url,
   closeTunnel: () => tunnelData?.stop(),
-  access: (url: string) => accessProc = child_process.spawn(bin.replace("app.asar", "app.asar.unpack"), ["access", "tcp", "--hostname", url, "--url", "localhost:25565"]),
+  access: (url: string) => {
+    accessProc = child_process.spawn(bin, ["access", "tcp", "--hostname", url, "--url", "localhost:25565"])
+    // accessProc?.stdout.on("data", (data: string) => console.log(Buffer.from(data, "utf-8").toString()))
+    // accessProc?.stderr.on("data", (data: string) => console.log(Buffer.from(data, "utf-8").toString()))
+  },
   closeAccess: () => {
     accessProc?.kill()
     accessProc = null
   },
-  getBin: () => bin.replace("app.asar", "app.asar.unpack"),
-  install: async () => await install(bin.replace("app.asar", "app.asar.unpack")),
+  getBin: () => bin,
+  install: async () => await install(bin),
   isAccessing: () => !!accessProc
 })
 
