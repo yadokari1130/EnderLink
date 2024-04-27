@@ -59,6 +59,7 @@
     "@octokit/types": "^12.6.0",
     "@types/express": "^4.17.21",
     "@types/mime": "3.0.4",
+    "@types/ps-tree": "^1.1.6",
     "@xterm/xterm": "^5.4.0",
     "axios": "^1.6.7",
     "cloudflared": "^0.5.1",
@@ -69,6 +70,7 @@
     "fs-extra": "^11.2.0",
     "node-stream-zip": "^1.15.0",
     "prismarine-nbt": "^2.5.0",
+    "ps-tree": "^1.2.0",
     "simple-git": "^3.23.0",
     "vue": "^3.2.25",
     "vuetify": "^3.5.5"

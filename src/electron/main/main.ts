@@ -6,6 +6,7 @@ import {autoUpdater} from "electron-updater";
 import * as http from "http";
 import axios from "axios";
 import * as path from "path";
+import ps_tree from "ps-tree";
 
 interface StoreType {
     access_token: Buffer | undefined,
@@ -119,6 +120,19 @@ app.whenReady().then(() => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })
 });
+
+function killAllProcesses() {
+    ps_tree(process.pid, (error: Error | null, children: readonly ps_tree.PS[]) => {
+        children.forEach((child: ps_tree.PS) => {
+            console.log(child.PID)
+            process.kill(Number(child.PID))
+        })
+    })
+}
+app.on("quit", killAllProcesses)
+process.on('SIGINT', killAllProcesses)
+process.on('SIGTERM', killAllProcesses)
+process.on('SIGQUIT', killAllProcesses)
 
 app.on("ready", () => {
     autoUpdater.checkForUpdatesAndNotify();
