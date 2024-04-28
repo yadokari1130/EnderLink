@@ -28,12 +28,14 @@ export interface INBT {
 export interface IFile {
     save: (filePath: string, text: string) => void
     saveBin: (filePath: string, data: any) => void
+    saveServerIcon: (imagePath: string, dirPath: string) => Promise<void>
     load: (filePath: string, encoding: BufferEncoding) => string
     loadBuffer: (filePath: string) => Buffer
     exists: (filePath: string) => boolean
     join: (...paths: string[]) => string
     selectPath: () => Promise<any>
     selectFilePath: (defaultPath: string) => Promise<any>
+    selectImagePath: (defaultPath: string) => Promise<any>
     url: () => string
     getUserDataPath: (...paths: string[]) => Promise<string>
     mkdir: (filePath: string) => void

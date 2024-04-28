@@ -5,6 +5,7 @@ import Running from "../components/Running.vue"
 import ServerSettings from "../components/ServerSettings.vue"
 import Invited from "../components/Invites.vue"
 import AppInfo from "../components/AppInfo.vue";
+import CloudflareTunnel from "../components/CloudflareTunnel.vue";
 
 const routes = [
     {
@@ -36,6 +37,11 @@ const routes = [
         path: "/appinfo",
         name: "AppInfo",
         component: AppInfo
+    },
+    {
+        path: "/cloudflare-tunnel",
+        name: "CloudflareTunnel",
+        component: CloudflareTunnel
     }
 ];
 

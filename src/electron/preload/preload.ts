@@ -13,6 +13,7 @@ import nbt, { NBTFormat } from "prismarine-nbt"
 import StreamZip from "node-stream-zip"
 import { Connection, install, bin, tunnel } from "cloudflared"
 import { ChildProcess } from "child_process";
+import sharp from "sharp";
 
 let proc: child_process.ChildProcessWithoutNullStreams | null = null
 let listener: Listener | null = null
@@ -42,12 +43,24 @@ contextBridge.exposeInMainWorld("store", {
 contextBridge.exposeInMainWorld("file", {
   save: (filePath: string, text: string) => fs.writeFileSync(filePath, text, { encoding: 'utf-8' }),
   saveBin: (filePath: string, data: any) => fs.writeFileSync(filePath, Buffer.from(data), "binary"),
+  saveServerIcon: async (imagePath: string, dirPath: string) => {
+    let image = sharp(imagePath)
+    await image.resize({
+      width: 64,
+      height: 64,
+      fit: "contain",
+      background: "#FFFFFF"
+    })
+        .toFormat("png")
+        .toFile(path.join(dirPath, "server-icon.png"))
+  },
   load: (filePath: string, encoding: BufferEncoding) => fs.readFileSync(filePath, {encoding: encoding}),
   loadBuffer: (filePath: string) => fs.readFileSync(filePath),
   exists: (filePath: string) => fs.pathExistsSync(filePath),
   join: (...paths: string[]) => join(...paths),
   selectPath: () => ipcRenderer.invoke("dialog:selectPath"),
   selectFilePath: (defaultPath: string) => ipcRenderer.invoke("dialog:selectFilePath", {defaultPath: defaultPath}),
+  selectImagePath: (defaultPath: string) => ipcRenderer.invoke("dialog:selectImagePath", {defaultPath: defaultPath}),
   url: () => window.location.href,
   getUserDataPath: async (...paths: string[]) => join(await ipcRenderer.invoke("file:getUserDataPath"), ...paths),
   mkdir: (filePath: string) => {

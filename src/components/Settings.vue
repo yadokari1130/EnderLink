@@ -6,8 +6,6 @@ import { useNgrokStore } from "../store/ngrok";
 import { useRunningStore } from "../store/running";
 import { Terminal } from "@xterm/xterm"
 import "@xterm/xterm/css/xterm.css"
-import { useCloudflaredStore } from "../store/cloudflared";
-import cloudflared from "cloudflared";
 
 export default defineComponent({
   name: "Settings",
@@ -76,15 +74,6 @@ export default defineComponent({
     openExternal(url: string) {
       window.shell.openExternal(url)
     },
-    async save() {
-      try {
-        await this.cloudflaredStore.save(window)
-      }
-      catch (error) {
-        console.log(error)
-        this.setError("設定の保存に失敗しました")
-      }
-    },
     setSnackbar(message: string) {
       this.snackbar = true
       this.snackbarMessage = message
@@ -92,7 +81,7 @@ export default defineComponent({
     },
     async saveAppSettings() {
       try {
-        await window.store.set("windowMaximize", this.windowMaximize.toString())
+        await window.store.set("startPath", this.startPath)
       }
       catch (error) {
         console.log(error)
@@ -127,21 +116,6 @@ export default defineComponent({
       window.command.write(this.command)
       this.command = ""
     },
-    async updateCloudflared(install: boolean) {
-      this.setOverlay(install ? "インストール中" : "アップデート中")
-      try {
-        await window.cloudflared.install()
-        await new Promise(resolve => setTimeout(resolve, 500))
-        await this.cloudflaredStore.fetchData(window)
-      }
-      catch (error) {
-        console.log(error)
-        this.setError(`Cloudlfaredの${install ? "インストール" : "アップデート"}に失敗しました`)
-        return
-      }
-
-      this.setSnackbar(`Cloudflaredを${install ? "インストール" : "アップデート"}しました`)
-    },
   },
   data: (): {
     errorMessage: string,
@@ -160,7 +134,7 @@ export default defineComponent({
     installing: boolean,
     command: string,
     term: Terminal | null,
-    cloudflaredStore: any,
+    startPath: string
   } => ({
     errorMessage: "",
     errorSnackbar: false,
@@ -178,18 +152,14 @@ export default defineComponent({
     installing: false,
     command: "",
     term: null,
-    cloudflaredStore: useCloudflaredStore()
+    startPath: ""
   }),
   async created() {
     await this.githubStore.fetchData(window)
     await this.ngrokStore.fetchData(window)
-    await this.cloudflaredStore.fetchData(window)
     this.isWin = window.shell.getPlatform() === "win32"
     this.windowMaximize = (await window.store.get("windowMaximize")) === "true"
-    if (!this.cloudflaredStore.cloudflaredVersion) {
-      this.cloudflaredStore.useCloudflared = false
-      await this.save()
-    }
+    this.startPath = await window.store.get("startPath")
   }
 })
 </script>
@@ -266,43 +236,17 @@ export default defineComponent({
     >GitHubでログイン</v-btn>
   </div>
 
-  <h2 class="ma-4 mt-16">
-    Cloudflared(ポート開放不要機能)
-    <v-tooltip location="bottom">
-      <template v-slot:activator="{props}">
-        <v-icon v-bind="props" class="ml-4">mdi-help-circle-outline</v-icon>
-      </template>
-      <p>ポート開放をせずにサーバーを公開することができるアプリケーションです</p>
-      <p>使うためにはサーバー参加者もEnderLinkをインストールし、接続を行う必要があります</p>
-    </v-tooltip>
-  </h2>
+  <h2 class="ma-4">アプリケーション設定</h2>
   <div class="border rounded pa-4">
-    <v-checkbox
-        hide-details
-        label="Cloudflared(ポート開放不要機能)を使う"
-        @change="save"
-        v-model="cloudflaredStore.useCloudflared"
-        class="mb-4"
-        :disabled="!cloudflaredStore.cloudflaredVersion"
-    />
-    <h3 class="mb-2">Cloudflared：{{cloudflaredStore.cloudflaredVersion ? `インストール済み(${cloudflaredStore.cloudflaredVersion})` : "未インストール"}}</h3>
-    <v-btn
-        size="large"
-        color="primary"
-        @click="() => updateCloudflared(!cloudflaredStore.cloudflaredVersion)"
-        width="100%"
-        class="mb-4"
-    >Cloudflaredを{{ cloudflaredStore.cloudflaredVersion ? "アップデート" : "インストール" }}</v-btn>
-  </div>
-
-  <h2 class="ma-4 mt-16">アプリ設定</h2>
-  <div class="border rounded pa-4 mb-16">
-    <v-checkbox
-        label="フルスクリーンで起動"
-        v-model="windowMaximize"
+    <p>初期ページ</p>
+    <v-radio-group
+        class="mt-8"
+        v-model="startPath"
         @change="saveAppSettings"
-        hide-details
-    />
+    >
+      <v-radio label="サーバー一覧(主にサーバー管理を行う方向け)" value="/"/>
+      <v-radio label="ポート開放不要機能(サーバー管理は行わず、主に他のサーバーに接続する方向け)" value="cloudflare-tunnel"/>
+    </v-radio-group>
   </div>
 
   <v-overlay

@@ -46,7 +46,9 @@ export default defineComponent({
     deletedCollaborator: [],
     status: "",
     tab: 1,
-    serverProps: null
+    serverProps: null,
+    deleteImage: false,
+    imagePath: ""
   }),
   async mounted() {
     this.serversPath = await window.file.getUserDataPath("servers.json")
@@ -86,7 +88,9 @@ export default defineComponent({
       })).data.map(r => ({name: r.invitee.login, avatarUrl: r.invitee.avatar_url, status: "inviting", invitationId: r.id})))
       this.collaborators = this.collaborators.filter(u => !this.deletedCollaborator.includes(u.name))
     },
-    save() {
+    async save() {
+      this.setOverlay("保存中")
+
       this.serverSettingsStore.serverData = {
         name: this.serverSettingsStore.serverData.name,
         path: this.serverSettingsStore.serverData.path,
@@ -109,13 +113,38 @@ export default defineComponent({
       }
 
       try {
+        if (this.deleteImage || !!this.imagePath) {
+          window.file.rm(window.file.join(this.serverSettingsStore.serverData.path, "server-icon.png"))
+          this.icon = null
+        }
+        if (!!this.imagePath)
+          await window.file.saveServerIcon(this.imagePath, this.serverSettingsStore.serverData.path)
+
+        if (window.file.exists(window.file.join(this.serverSettingsStore.serverData.path, "server-icon.png")))
+          this.icon = window.file.load(window.file.join(this.serverSettingsStore.serverData.path, "server-icon.png"), "base64")
+
+        this.imagePath = ""
+        this.deleteImage = false
+
         window.file.save(this.serversPath, JSON.stringify(this.datas))
-        this.setSnackbar("保存しました")
       }
       catch (error) {
         console.log(error)
         this.setError("保存に失敗しました")
+        return
       }
+
+      try {
+        await window.git.upload(this.serverSettingsStore.serverData.path, "アイコンを変更")
+        await this.setCommitLog()
+      }
+      catch (error) {
+        console.log(error)
+        this.setError("データのアップロードに失敗しました")
+        return
+      }
+
+      this.setSnackbar("保存しました")
     },
     openFolder() {
       window.shell.showItemInFolder(this.serverSettingsStore.serverData.path)
@@ -459,13 +488,19 @@ export default defineComponent({
 
       if (notFound) this.setError("起動コマンドが見つかりませんでした")
     },
+    async selectPath() {
+      const result = await window.file.selectImagePath(".")
+      if (result !== undefined) this.imagePath = result[0]
+    }
   },
   computed: {
     isChanged() {
       let isChanged = false
-      isChanged = isChanged || this.maxMem !== this.serverSettingsStore.serverData.maxMem
-      isChanged = isChanged || this.minMem !== this.serverSettingsStore.serverData.minMem
-      isChanged = isChanged || this.command !== this.serverSettingsStore.serverData.command
+      isChanged ||= this.maxMem !== this.serverSettingsStore.serverData.maxMem
+      isChanged ||= this.minMem !== this.serverSettingsStore.serverData.minMem
+      isChanged ||= this.command !== this.serverSettingsStore.serverData.command
+      isChanged ||= !!this.imagePath
+      isChanged ||= this.deleteImage
 
       return isChanged
     }
@@ -489,7 +524,7 @@ export default defineComponent({
       <v-col cols="3"><v-tab :value="1" width="100%" prepend-icon="mdi-cog"><h3>基本設定</h3></v-tab></v-col>
       <v-col cols="3"><v-tab :value="2" width="100%" prepend-icon="mdi-file-cog-outline"><h3>プロパティ</h3></v-tab></v-col>
       <v-col cols="3"><v-tab :value="3" width="100%" prepend-icon="mdi-earth"><h3>ワールド・データパック</h3></v-tab></v-col>
-      <v-col cols="3"><v-tab :value="4" width="100%" prepend-icon="mdi-account-check"><h3>ホワイトリスト</h3></v-tab></v-col>
+      <v-col cols="3"><v-tab :value="4" width="100%" prepend-icon="mdi-account-check"><h3>ホワイトリスト・OP権限</h3></v-tab></v-col>
     </v-row>
   </v-tabs>
 
@@ -497,7 +532,14 @@ export default defineComponent({
     <v-window-item :value="1">
       <div v-if="serverSettingsStore.serverData">
         <div class="d-flex flex-row align-center">
-          <v-img rounded inline class="mr-4" :src="icon ? `data:image/png;base64,${icon}` : 'https://raw.githubusercontent.com/yadokari1130/EnderLink/master/public/pack.png'" width="128px" height="128px"></v-img>
+          <v-img
+              rounded
+              inline
+              class="mr-4"
+              :src="icon ? `data:image/png;base64,${icon}` : 'https://raw.githubusercontent.com/yadokari1130/EnderLink/master/public/pack.png'"
+              width="128px"
+              height="128px"
+          />
           <h2>サーバー名：{{serverSettingsStore.serverData.name}}</h2>
         </div>
 
@@ -614,9 +656,43 @@ export default defineComponent({
             </v-col>
           </v-row>
 
-          <v-row justify="end">
+          <v-row>
+            <v-col cols="10" align-self="center">
+              <div class="d-flex flex-row align-center">
+                <p class="text-center">{{imagePath}}</p>
+                <v-btn
+                    v-if="!!imagePath"
+                    icon="mdi-close"
+                    variant="text"
+                    @click="imagePath = ''"
+                />
+              </div>
+            </v-col>
             <v-col cols="2">
-              <v-btn @click="save" color="primary" size="large" width="100%">保存</v-btn>
+              <v-btn
+                  size="large"
+                  @click="selectPath"
+                  color="primary"
+                  width="100%"
+              >サーバーアイコンを選択</v-btn>
+            </v-col>
+            <v-col cols="12">
+              <v-checkbox
+                label="サーバーアイコンを削除"
+                v-model="deleteImage"
+                hide-details
+              />
+            </v-col>
+          </v-row>
+
+          <v-row class="mt-8">
+            <v-col cols="12">
+              <v-btn
+                  @click="save"
+                  color="primary"
+                  size="large"
+                  width="100%"
+              >保存</v-btn>
             </v-col>
           </v-row>
         </div>
@@ -755,8 +831,8 @@ export default defineComponent({
             <v-data-table
                 :items="collaborators"
                 :headers="[
-            {title: 'ユーザー', key: 'user', width: '85%'},
-            {title: '状態', key: 'status', width: '10%', align: 'center'},
+            {title: 'ユーザー', key: 'user', width: '80%'},
+            {title: '状態', key: 'status', width: '15%', align: 'center'},
             {title: '操作', key: 'actions', align: 'center', width: '5%', sortable: false}
         ]"
             >

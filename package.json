@@ -71,6 +71,7 @@
     "node-stream-zip": "^1.15.0",
     "prismarine-nbt": "^2.5.0",
     "ps-tree": "^1.2.0",
+    "sharp": "^0.33.3",
     "simple-git": "^3.23.0",
     "vue": "^3.2.25",
     "vuetify": "^3.5.5"

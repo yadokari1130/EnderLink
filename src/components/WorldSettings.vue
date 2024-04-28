@@ -164,6 +164,7 @@ export default defineComponent({
     this.props = new ServerProperties(window.file.join(this.serverSettingsStore.serverData.path, "server.properties"), window)
     let dpPath = window.file.join(this.serverSettingsStore.serverData.path, this.props.props["level-name"].value, "datapacks")
 
+    window.file.mkdir(window.file.join(this.serverSettingsStore.serverData.path, this.props.props["level-name"].value))
     window.file.mkdir(dpPath)
 
     let dps = window.file.getAllChildren(dpPath)

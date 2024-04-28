@@ -22,7 +22,8 @@ export default defineComponent({
     snackbar: false,
     snackbarMessage: "",
     port: "",
-    ip: ""
+    ip: "",
+    killDialog: false
   }),
   methods: {
     setError(errorMessage: string) {
@@ -105,11 +106,10 @@ export default defineComponent({
     <v-text-field
         v-model="command"
         density="comfortable"
-        prepend-icon="mdi-play"
         variant="outlined"
         @keydown.enter="sendCommand"
-        @click:prepend="sendCommand"
         :disabled="!runningStore.isRunning"
+        placeholder="コマンドを入力 例：stop"
     />
 
     <v-tooltip location="bottom">
@@ -123,7 +123,7 @@ export default defineComponent({
             class="mt-16"
             v-bind="props"
             :disabled="!runningStore.isRunning"
-            @click="kill"
+            @click="killDialog = true"
         >強制終了</v-btn>
       </template>
       <p>正常にデータが保存されない場合があるため、通常は「stop」コマンドで終了させてください</p>
@@ -163,6 +163,35 @@ export default defineComponent({
       </v-btn>
     </template>
   </v-snackbar>
+
+  <v-dialog
+      v-model="killDialog"
+      width="800px"
+      transition="slide-y-transition"
+  >
+    <v-card title="強制終了">
+      <v-card-text>
+        <p>本当に強制終了しますか？</p>
+        <p><strong>強制終了した場合、正常にサーバーデータが保存されない可能性があります</strong></p>
+        <p><strong>通常はstopコマンドで終了し、しばらく待っても終了しない場合のみ強制終了を行ってください</strong></p>
+      </v-card-text>
+      <v-divider/>
+      <v-card-actions>
+        <v-spacer/>
+        <v-btn
+            variant="text"
+            @click="killDialog = false"
+            size="large"
+        >閉じる</v-btn>
+        <v-btn
+            variant="text"
+            @click="kill"
+            size="large"
+            color="red"
+        >削除</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <style scoped>

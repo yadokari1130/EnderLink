@@ -38,7 +38,20 @@ function handleSelectPath() {
 function selectFilePath(defaultPath: string) {
     return dialog.showOpenDialogSync({
         title: "ファイルを選択",
-        defaultPath: defaultPath
+        defaultPath: defaultPath,
+    })
+}
+
+function selectImagePath(defaultPath: string) {
+    return dialog.showOpenDialogSync({
+        title: "画像を選択",
+        defaultPath: defaultPath,
+        filters: [
+            {
+                name: "画像ファイル",
+                extensions: ["png", "jpg", "jpeg"],
+            },
+        ],
     })
 }
 
@@ -53,7 +66,7 @@ function createWindow() {
         },
     });
     // mainWindow.removeMenu()
-    if (getStore("windowMaximize") === "true") mainWindow.maximize()
+    mainWindow.maximize()
 
     // and load the index.html of the app.
     if (isDev) {
@@ -100,6 +113,7 @@ app.whenReady().then(() => {
     ipcMain.handle('dialog:openFile', handleFileOpen)
     ipcMain.handle("dialog:selectPath", handleSelectPath)
     ipcMain.handle("dialog:selectFilePath", (event, args) => selectFilePath(args.defaultPath))
+    ipcMain.handle("dialog:selectImagePath", (event, args) => selectImagePath(args.defaultPath))
     ipcMain.handle("server:waitCallback", (event, args) => waitCallback(args.url))
     ipcMain.handle("win:focusWin", focusWin)
     ipcMain.handle("file:getUserDataPath", getUserDataPath)
@@ -125,7 +139,12 @@ function killAllProcesses() {
     ps_tree(process.pid, (error: Error | null, children: readonly ps_tree.PS[]) => {
         children.forEach((child: ps_tree.PS) => {
             console.log(child.PID)
-            process.kill(Number(child.PID))
+            try {
+                process.kill(Number(child.PID))
+            }
+            catch (error) {
+                console.log(error)
+            }
         })
     })
 }

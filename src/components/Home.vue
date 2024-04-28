@@ -7,7 +7,6 @@ import { useServerSettingsStore } from "../store/server-settings";
 import axios from "axios";
 import { compare } from "compare-versions";
 import WorldCard from "./WorldCard.vue";
-import { useCloudflaredStore } from "../store/cloudflared";
 
 export default defineComponent({
   name: "Home",
@@ -50,9 +49,6 @@ export default defineComponent({
     selectedWorldPath: "",
     singleWorldDialog: false,
     singleWorlds: [],
-    accessDialog: false,
-    accessUrl: "",
-    cloudflaredStore: useCloudflaredStore()
   }),
   async mounted() {
     this.serversPath = await window.file.getUserDataPath("servers.json")
@@ -343,35 +339,6 @@ export default defineComponent({
         this.selectedWorldPath = selected[0]
       }
     },
-    access() {
-      this.accessDialog = false
-      this.setOverlay("接続中")
-
-      try {
-        this.cloudflaredStore.access(this.accessUrl, window)
-      }
-      catch (error) {
-        console.log(error)
-        this.setError("接続に失敗しました\n基本設定画面からCloudflaredのアップデートを試してみてください")
-        return
-      }
-
-      this.setSnackbar("接続しました\nMinecraft内で「localhost」と入力するとサーバーに接続することができます")
-    },
-    closeAccess() {
-      this.setOverlay("切断中")
-
-      try {
-        this.cloudflaredStore.closeAccess(window)
-      }
-      catch (error) {
-        console.log(error)
-        this.setError("切断に失敗しました")
-        return
-      }
-
-      this.setSnackbar("切断しました")
-    },
   },
   watch: {
     tab() {
@@ -396,10 +363,6 @@ export default defineComponent({
       <p>サーバーがありません</p>
       <p>右下の「<v-icon>mdi-plus</v-icon>」ボタンからサーバーを追加してください</p>
     </v-col>
-    <v-col class="mt-2" cols="12">
-      <p>他サーバーに接続する場合は右下の「<v-icon>mdi-lan-connect</v-icon>」ボタンを押し、</p>
-      <p>表示されたウィンドウにサーバーアドレスを入力して接続してください</p>
-    </v-col>
   </v-row>
 
   <v-row justify="space-evenly">
@@ -413,67 +376,35 @@ export default defineComponent({
     <div style="width: 600px" v-if="Object.keys(datas).length % 2 === 1" class="my-6"/>
   </v-row>
 
-  <v-layout-item model-value position="bottom" class="text-end" size="180">
-    <div class="ma-4 mx-12">
-      <v-tooltip
-        location="left"
-        :disabled="!!cloudflaredStore.cloudflaredVersion"
-        v-if="!cloudflaredStore.isAccessing"
-      >
-        <template v-slot:activator="{ props }">
-          <div class="d-inline-block" v-bind="props">
-            <v-btn
-                icon="mdi-lan-connect"
-                size="x-large"
-                color="primary"
-                elevation="8"
-                @click="accessDialog = true; accessUrl = ''"
-                :disabled="!cloudflaredStore.cloudflaredVersion"
-            />
-          </div>
-        </template>
-        <p>Cloudflaredがインストールされていません</p>
-        <p>基本設定画面からCloudflaredをインストールしてください</p>
-      </v-tooltip>
-      <v-btn
-          icon="mdi-lan-disconnect"
-          size="x-large"
-          color="error"
-          elevation="8"
-          @click="closeAccess"
-          v-else
-      />
-    </div>
-    <div class="ma-4 mx-12">
-      <v-tooltip
-          location="left"
-          :disabled="githubStore.userData && githubStore.availableSSH && !!githubStore.gitVersion"
-      >
-        <template v-slot:activator="{ props }">
-          <div class="d-inline-block" v-bind="props">
-            <v-btn
-                icon="mdi-plus"
-                size="x-large"
-                color="primary"
-                elevation="8"
-                @click="() => {
-                  this.dialog = true
-                  this.path = ''
-                  this.name = ''
-                  this.server = null
-                  this.command = ''
-                  this.eula = false
-                  this.selectedWorldPath = null
-                }"
-                :disabled="!githubStore.userData || !githubStore.availableSSH || !githubStore.gitVersion"
-            />
-          </div>
-        </template>
-        <p>サーバーを追加するためには基本設定画面から</p>
-        <p>Gitのインストール、GitHubにログイン、SSHキーの追加を行ってください</p>
-      </v-tooltip>
-    </div>
-  </v-layout-item>
+  <v-tooltip
+      location="left"
+      :disabled="githubStore.userData && githubStore.availableSSH && !!githubStore.gitVersion"
+  >
+    <template v-slot:activator="{ props }">
+      <div class="d-inline-block" v-bind="props">
+        <v-btn
+            icon="mdi-plus"
+            size="x-large"
+            color="primary"
+            elevation="8"
+            @click="() => {
+              this.dialog = true
+              this.path = ''
+              this.name = ''
+              this.server = null
+              this.command = ''
+              this.eula = false
+              this.selectedWorldPath = null
+            }"
+            :disabled="!githubStore.userData || !githubStore.availableSSH || !githubStore.gitVersion"
+            position="fixed"
+            style="bottom: 30px; right: 50px"
+        />
+      </div>
+    </template>
+    <p>サーバーを追加するためには基本設定画面から</p>
+    <p>Gitのインストール、GitHubにログイン、SSHキーの追加を行ってください</p>
+  </v-tooltip>
 
   <v-dialog
       v-model="dialog"
@@ -554,7 +485,12 @@ export default defineComponent({
                 <h3 class="text-center">ワールド指定なし(ワールドを新規生成)</h3>
               </v-col>
               <v-col cols="3">
-                <v-btn size="large" @click="selectPath">フォルダを選択</v-btn>
+                <v-btn
+                    size="large"
+                    @click="selectPath"
+                    color="primary"
+                    width="100%"
+                >フォルダを選択</v-btn>
               </v-col>
               <v-col cols="9" align-self="center">
                 <p class="text-end">{{newJoinedPath}}</p>
@@ -635,7 +571,12 @@ export default defineComponent({
                 />
               </v-col>
               <v-col cols="3">
-                <v-btn size="large" @click="selectPath">フォルダを選択</v-btn>
+                <v-btn
+                    size="large"
+                    @click="selectPath"
+                    color="primary"
+                    width="100%"
+                >フォルダを選択</v-btn>
               </v-col>
               <v-col cols="9" align-self="center">
                 <p class="text-end">{{path}}</p>
@@ -700,7 +641,12 @@ export default defineComponent({
                 />
               </v-col>
               <v-col cols="3">
-                <v-btn size="large" @click="selectPath">フォルダを選択</v-btn>
+                <v-btn
+                    size="large"
+                    @click="selectPath"
+                    color="primary"
+                    width="100%"
+                >フォルダを選択</v-btn>
               </v-col>
               <v-col cols="9" align-self="center">
                 <p class="text-end">{{joinedPath}}</p>
@@ -835,41 +781,6 @@ export default defineComponent({
             @click="singleWorldDialog = false"
             size="large"
         >閉じる</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
-
-  <v-dialog
-      v-model="accessDialog"
-      width="800px"
-      transition="slide-y-transition"
-  >
-    <v-card title="サーバーに接続">
-      <v-card-text>
-        <v-row>
-          <v-col cols="12">
-            <v-text-field
-                v-model="accessUrl"
-                label="サーバーアドレス"
-                variant="outlined"
-                @keydown.enter="access"
-            />
-          </v-col>
-        </v-row>
-      </v-card-text>
-      <v-divider/>
-      <v-card-actions>
-        <v-spacer/>
-        <v-btn
-            variant="text"
-            @click="accessDialog = false"
-            size="large"
-        >閉じる</v-btn>
-        <v-btn
-          variant="text"
-          @click="access"
-          size="large"
-        >接続</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
