@@ -245,7 +245,7 @@ export default defineComponent({
         @change="saveAppSettings"
     >
       <v-radio label="サーバー一覧(主にサーバー管理を行う方向け)" value="/"/>
-      <v-radio label="ポート開放不要機能(サーバー管理は行わず、主に他のサーバーに接続する方向け)" value="cloudflare-tunnel"/>
+      <v-radio label="ポート開放不要機能(サーバー管理は行わず、主に他のサーバーに接続する方向け)" value="/cloudflare-tunnel"/>
     </v-radio-group>
   </div>
 

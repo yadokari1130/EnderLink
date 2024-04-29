@@ -461,7 +461,7 @@ export default defineComponent({
                         width="100%"
                         @click="selectFile"
                         v-bind="props"
-                    >フォルダを選択</v-btn>
+                    >ワールドフォルダを選択</v-btn>
                   </template>
                   配布ワールドなどは解凍したものを選択してください
                 </v-tooltip>
@@ -490,7 +490,7 @@ export default defineComponent({
                     @click="selectPath"
                     color="primary"
                     width="100%"
-                >フォルダを選択</v-btn>
+                >保存先のフォルダを選択</v-btn>
               </v-col>
               <v-col cols="9" align-self="center">
                 <p class="text-end">{{newJoinedPath}}</p>
@@ -576,7 +576,7 @@ export default defineComponent({
                     @click="selectPath"
                     color="primary"
                     width="100%"
-                >フォルダを選択</v-btn>
+                >サーバーフォルダを選択</v-btn>
               </v-col>
               <v-col cols="9" align-self="center">
                 <p class="text-end">{{path}}</p>
@@ -646,7 +646,7 @@ export default defineComponent({
                     @click="selectPath"
                     color="primary"
                     width="100%"
-                >フォルダを選択</v-btn>
+                >保存先のフォルダを選択</v-btn>
               </v-col>
               <v-col cols="9" align-self="center">
                 <p class="text-end">{{joinedPath}}</p>

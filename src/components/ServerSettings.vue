@@ -772,7 +772,7 @@ export default defineComponent({
           </v-row>
         </div>
 
-        <h2 class="mt-16 ma-4">操作履歴</h2>
+        <h2 class="mt-16 ma-4">バックアップ一覧</h2>
         <div class="pa-4 rounded border">
           <v-row>
             <v-data-table
@@ -795,7 +795,7 @@ export default defineComponent({
           </v-row>
         </div>
 
-        <h2 class="mt-16 ma-4">サーバー管理者</h2>
+        <h2 class="mt-16 ma-4">サーバー管理者一覧</h2>
         <div class="pa-4 rounded border">
           <v-row>
             <v-col cols="12">

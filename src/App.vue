@@ -66,6 +66,12 @@ export default defineComponent({
             to="/"
             router/>
         <v-list-item
+            title="Cloudflare Tunnel"
+            to="/cloudflare-tunnel"
+            router
+            prepend-icon="mdi-lan-connect"
+        />
+        <v-list-item
             title="起動中のサーバー"
             to="/running"
             router>
@@ -92,12 +98,6 @@ export default defineComponent({
           </template>
         </v-list-item>
         <v-list-item
-            title="Cloudflare Tunnel"
-            to="/cloudflare-tunnel"
-            router
-            prepend-icon="mdi-lan-connect"
-        />
-        <v-list-item
           title="アプリ情報"
           to="/appinfo"
           router
@@ -123,7 +123,7 @@ export default defineComponent({
         <p>基本設定から変更することもできます</p>
         <v-radio-group class="mt-8" v-model="startPath">
           <v-radio label="サーバー一覧(主にサーバー管理を行う方向け)" value="/"/>
-          <v-radio label="ポート開放不要機能(サーバー管理は行わず、主に他のサーバーに接続する方向け)" value="cloudflare-tunnel"/>
+          <v-radio label="ポート開放不要機能(サーバー管理は行わず、主に他のサーバーに接続する方向け)" value="/cloudflare-tunnel"/>
         </v-radio-group>
       </v-card-text>
       <v-divider/>

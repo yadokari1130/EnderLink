@@ -90,8 +90,8 @@ export default defineComponent({
 
     <h2 class="mt-6">状態：{{runningStore.status}}</h2>
     <div class="d-flex flex-row align-center">
-      <h2 v-if="runningStore.url">URL：{{runningStore.url}}</h2>
-      <h2 v-else>URL：{{ip}}:{{port}}</h2>
+      <h2 v-if="runningStore.url">サーバーアドレス：{{runningStore.url}}</h2>
+      <h2 v-else>サーバーアドレス：{{ip}}:{{port}}</h2>
       <v-btn icon="mdi-content-copy" variant="text" @click="copy"></v-btn>
       <v-btn @click="tweet" size="large" color="primary" class="ml-6">ツイートする</v-btn>
     </div>

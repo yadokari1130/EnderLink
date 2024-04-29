@@ -194,9 +194,9 @@ export default defineComponent({
                 width="100%"
                 @click="selectFile"
                 v-bind="props"
-            >フォルダを選択</v-btn>
+            >ワールドフォルダを選択</v-btn>
           </template>
-          配布ワールドなどは解答したものを選択してください
+          配布ワールドなどは解凍したものを選択してください
         </v-tooltip>
       </v-col>
     </v-row>
