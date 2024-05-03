@@ -132,7 +132,7 @@ export default defineComponent({
             </div>
           </template>
           <p>Cloudflaredがインストールされていません</p>
-          <p>基本設定画面からCloudflaredをインストールしてください</p>
+          <p>画面下部のボタンからCloudflaredをインストールしてください</p>
         </v-tooltip>
         <v-btn
           size="x-large"
