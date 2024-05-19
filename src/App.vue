@@ -14,7 +14,8 @@ export default defineComponent({
     cloudflaredStore: useCloudflaredStore(),
     colors: {"起動中": "green", "終了中": "red", "停止済み": "grey", "エラー": "red"},
     dialog: false,
-    startPath: null
+    startPath: null,
+    news: null
   }),
   async mounted() {
     await this.ngrokStore.fetchData(window)
@@ -28,7 +29,7 @@ export default defineComponent({
       this.dialog = true
     }
 
-    await router.push(this.startPath)
+    if (this.startPath) await router.push(this.startPath)
   },
   async beforeCreate() {
     window.file.mkdir(await window.file.getUserDataPath("scripts"))
@@ -41,12 +42,42 @@ export default defineComponent({
       let shPath = await window.file.getUserDataPath("scripts", "hostbasedAuth.sh")
       if (!window.file.exists(shPath)) window.file.save(shPath, "#!/bin/bash\nssh -T git@github.com")
     }
+
+    await this.showNews()
   },
   methods: {
+    async showNews() {
+      let showedNews = await window.store.get("showedNews")
+      window.server.get("https://raw.githubusercontent.com/yadokari1130/EnderLink/master/news.json")
+          .then(result => {
+            const news = JSON.parse(result)
+            if (!showedNews && news.first) this.news = news[news.first]
+            else this.news = news[news[showedNews].next]
+            if (this.news) {
+              this.$nextTick(() => {
+                const newsRef = this.$refs.news
+                if (newsRef) {
+                  newsRef.querySelectorAll(".link").forEach(link => {
+                    link.addEventListener("click", () => this.openExternal(link.innerHTML))
+                  })
+                }
+              })
+            }
+          })
+          .catch(error => console.log(error))
+    },
+    async closeNews() {
+      await window.store.set("showedNews", this.news.id)
+      this.news = null
+      setTimeout(this.showNews, 500)
+    },
     async setStartPath() {
       await window.store.set("startPath", this.startPath)
       this.dialog = false
       await router.push(this.startPath)
+    },
+    openExternal(url: string) {
+      window.shell.openExternal(url)
     }
   }
 })
@@ -109,6 +140,17 @@ export default defineComponent({
     <v-main class="ma-6 ml-16">
       <router-view/>
     </v-main>
+
+    <v-bottom-navigation :active="!!news" height="75">
+      <div class="ma-2">
+        <h3>[お知らせ]</h3>
+        <div ref="news" v-html="news?.content"/>
+      </div>
+      <v-spacer/>
+      <v-btn @click="closeNews">
+        閉じる
+      </v-btn>
+    </v-bottom-navigation>
   </v-app>
 
   <v-dialog
@@ -142,5 +184,10 @@ export default defineComponent({
   </v-dialog>
 </template>
 
-<style scoped>
+<style>
+.link {
+  cursor: pointer;
+  color: blue;
+  width: fit-content;
+}
 </style>
