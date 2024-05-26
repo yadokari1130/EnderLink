@@ -9,7 +9,8 @@ import { useGitHubStore } from "../store/github";
 export interface ServerData {
   name: string
   path: string
-  command: string
+  args: string
+  jarPath: string
   maxMem: number
   minMem: number
   url: string,
@@ -40,8 +41,8 @@ export default defineComponent({
     async run() {
       if (this.runningStore.isRunning) return
 
-      if (!this.serverData.command) {
-        this.$emit("setError", "起動コマンドが設定されていません")
+      if (!this.serverData.jarPath) {
+        this.$emit("setError", "Jarファイルが設定されていません")
         return
       }
 

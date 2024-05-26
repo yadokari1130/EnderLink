@@ -110,14 +110,14 @@ export const useRunningStore = defineStore("running", {
             this.serverData = serverData
             this.icon = icon
 
-            let command = serverData.command
-            command = command.replace(/-Xmx[\S]+/g, "")
-            command = command.replace(/-Xms[\S]+/g, "")
-            command += ` -Xmx${serverData.maxMem}M -Xms${serverData.minMem}`
+            let command = `java -Xmx${serverData.maxMem}M -Xms${serverData.minMem}M `
+            command += this.serverData.args
+            command += ` -jar ${serverData.jarPath}`
+            command += " nogui"
 
             console.log(command)
 
-            window.command.spawn(serverData.command, serverData.path,
+            window.command.spawn(command, serverData.path,
                 data => this.add(data),
                 data => this.add(data),
                 async code => {

@@ -35,7 +35,8 @@ export default defineComponent({
     repositories: [],
     githubValidation: (value: string) => (value.match(/[\w\-]{2,255}/g) && value.match(/[\w\-]{2,255}/g)[0] === value) || "名前は2文字以上255文字以下かつ、半角英数字・アンダーバー・ハイフンのみが使えます",
     server: null,
-    command: "",
+    args: "",
+    jarPath: "",
     serverSettingsStore: useServerSettingsStore(),
     snackbarMessage: "",
     snackbar: false,
@@ -49,6 +50,7 @@ export default defineComponent({
     selectedWorldPath: "",
     singleWorldDialog: false,
     singleWorlds: [],
+    serverFiles: [],
   }),
   async mounted() {
     this.serversPath = await window.file.getUserDataPath("servers.json")
@@ -109,7 +111,8 @@ export default defineComponent({
         url: this.server.html_url,
         maxMem: this.maxMem,
         minMem: this.minMem,
-        command: this.command,
+        args: this.args,
+        jarPath: window.file.join(this.joinedPath, this.jarPath),
         repositoryId: this.server.id,
         owner: this.server.owner.login
       }
@@ -118,7 +121,8 @@ export default defineComponent({
       this.path = ""
       this.minMem = 0
       this.maxMem = 0
-      this.command = ""
+      this.args = ""
+      this.jarPath = ""
 
       this.dialog = false
       this.overlay = false
@@ -220,7 +224,7 @@ export default defineComponent({
         url: htmlUrl,
         maxMem: this.maxMem,
         minMem: this.minMem,
-        command: this.command,
+        args: this.args,
         repositoryId: repositoryId,
         owner: owner
       }
@@ -229,7 +233,8 @@ export default defineComponent({
       this.path = ""
       this.minMem = 0
       this.maxMem = 0
-      this.command = ""
+      this.args = ""
+      this.jarPath = ""
       this.eula = false
       this.selectedWorldPath = null
 
@@ -248,30 +253,6 @@ export default defineComponent({
         if (repo.length === 0) break
         repo.forEach(r => this.repositories.push(r))
       }
-    },
-    async importCommand() {
-      let script
-      try {
-        const paths = (await window.file.selectFilePath(this.path))
-        if (!paths) return
-        script = window.file.load(paths[0], "utf-8")
-      }
-      catch (error) {
-        console.log(error)
-        this.setError("ファイルの読み込みに失敗しました")
-        return
-      }
-
-      let notFound = true
-      let lines = script.split("\n")
-      for (let l of lines) {
-        if (l.startsWith("java")) {
-          notFound = false
-          this.command = l
-        }
-      }
-
-      if (notFound) this.setError("起動コマンドが見つかりませんでした")
     },
     async downloadServer() {
       try {
@@ -339,15 +320,51 @@ export default defineComponent({
         this.selectedWorldPath = selected[0]
       }
     },
+    async selectJar() {
+      if (!this.path) return
+
+      let selected = await window.file.selectFilePath(this.path)
+      if (!selected) return
+      let dirname = window.file.dirname(selected[0])
+      if (dirname !== this.path) {
+        this.setError("サーバーフォルダ内にあるjarファイルを選択してください")
+        return
+      }
+      if (!selected[0].endsWith(".jar")) {
+        this.setError("jarファイルを選択してください")
+        return
+      }
+
+      this.jarPath = selected[0]
+    }
   },
   watch: {
-    tab() {
+    async tab(newValue, oldValue) {
       this.name = ""
-      this.command = ""
+      this.args = ""
+      this.jarPath = ""
       this.maxMem = 2048
       this.minMem = 0
       this.eula = false
       this.selectedWorldPath = null
+      this.server = null
+
+      if (newValue === 3) await this.fetchAllRepository()
+    },
+    async server(newValue, oldValue) {
+      this.serverFiles = []
+      if (!newValue) return
+
+      try {
+        this.serverFiles = (await this.githubStore.octokit.repos.getContent({
+          owner: newValue.owner.login,
+          repo: newValue.name,
+          path: ""
+        })).data.map(f => f.name)
+      }
+      catch (error) {
+        console.log(error)
+      }
     }
   }
 })
@@ -381,7 +398,11 @@ export default defineComponent({
       :disabled="githubStore.userData && githubStore.availableSSH && !!githubStore.gitVersion"
   >
     <template v-slot:activator="{ props }">
-      <div class="d-inline-block" v-bind="props">
+      <div
+          class="d-inline-block"
+          v-bind="props"
+          style="bottom: 30px; right: 50px; position: fixed"
+      >
         <v-btn
             icon="mdi-plus"
             size="x-large"
@@ -392,13 +413,12 @@ export default defineComponent({
               this.path = ''
               this.name = ''
               this.server = null
-              this.command = ''
+              this.args = ''
+              this.jarPath = ''
               this.eula = false
               this.selectedWorldPath = null
             }"
             :disabled="!githubStore.userData || !githubStore.availableSSH || !githubStore.gitVersion"
-            position="fixed"
-            style="bottom: 30px; right: 50px"
         />
       </div>
     </template>
@@ -519,30 +539,13 @@ export default defineComponent({
               </v-col>
             </v-row>
             <v-row>
-              <v-col>
+              <v-col cols="12">
                 <v-text-field
                     variant="outlined"
-                    label="起動コマンド"
-                    v-model="command"
-                    placeholder="例：java -jar server.jar nogui"
+                    label="Javaオプション"
+                    v-model="args"
                     hide-details
-                >
-                  <template v-slot:append>
-                    <v-tooltip location="bottom">
-                      <template v-slot:activator="{props}">
-                        <v-btn
-                            size="large"
-                            color="primary"
-                            style="text-transform: none"
-                            v-bind="props"
-                            @click="importCommand"
-                            variant="text"
-                        >batからインポート</v-btn>
-                      </template>
-                      <p>シェルスクリプトからもインポートすることができます</p>
-                    </v-tooltip>
-                  </template>
-                </v-text-field>
+                />
               </v-col>
             </v-row>
             <v-row>
@@ -605,28 +608,27 @@ export default defineComponent({
               </v-col>
             </v-row>
             <v-row>
+              <v-col cols="10">
+                <p>{{jarPath}}</p>
+              </v-col>
+              <v-col cols="2">
+                <v-btn
+                    width="100%"
+                    color="primary"
+                    size="large"
+                    @click="selectJar"
+                    :disabled="!path"
+                >jarを選択</v-btn>
+              </v-col>
+            </v-row>
+            <v-row>
               <v-col>
                 <v-text-field
                     variant="outlined"
-                    label="起動コマンド"
-                    v-model="command"
-                    placeholder="例：java -jar server.jar nogui">
-                  <template v-slot:append>
-                    <v-tooltip location="bottom">
-                      <template v-slot:activator="{props}">
-                        <v-btn
-                            size="large"
-                            color="primary"
-                            style="text-transform: none"
-                            v-bind="props"
-                            @click="importCommand"
-                            variant="text"
-                        >batからインポート</v-btn>
-                      </template>
-                      <p>シェルスクリプトからもインポートすることができます</p>
-                    </v-tooltip>
-                  </template>
-                </v-text-field>
+                    label="Javaオプション"
+                    v-model="args"
+                    hide-details
+                />
               </v-col>
             </v-row>
           </v-window-item>
@@ -675,8 +677,24 @@ export default defineComponent({
               </v-col>
             </v-row>
             <v-row>
-              <v-col>
-                <v-text-field variant="outlined" label="起動コマンド" v-model="command" placeholder="例：java -jar server.jar"></v-text-field>
+              <v-col cols="12">
+                <v-select
+                    label="jarを選択"
+                    variant="outlined"
+                    :items="serverFiles.filter(f => f.endsWith('.jar'))"
+                    hide-details
+                    v-model="jarPath"
+                />
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="12">
+                <v-text-field
+                    variant="outlined"
+                    label="Javaオプション"
+                    v-model="args"
+                    hide-details
+                />
               </v-col>
             </v-row>
           </v-window-item>
@@ -698,7 +716,10 @@ export default defineComponent({
               else if (tab === 3) cloneServer()
             }"
             size="large"
-            :disabled="!((tab === 1 && this.githubValidation(this.name) === true && this.eula) || (tab === 2 && this.githubValidation(this.name) === true) || (tab === 3 && this.server))"
+            :disabled="!(
+                (tab === 1 && this.githubValidation(this.name) === true && this.eula) ||
+                (tab === 2 && this.githubValidation(this.name) === true && this.jarPath) ||
+                (tab === 3 && this.server && this.jarPath))"
         >追加</v-btn>
       </v-card-actions>
     </v-card>

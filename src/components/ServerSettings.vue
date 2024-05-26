@@ -20,7 +20,6 @@ export default defineComponent({
     icon: null,
     minMem: 0,
     maxMem: 0,
-    command: "",
     datas: {},
     serversPath: "",
     snackbar: false,
@@ -48,7 +47,9 @@ export default defineComponent({
     tab: 1,
     serverProps: null,
     deleteImage: false,
-    imagePath: ""
+    imagePath: "",
+    jarPath: "",
+    args: ""
   }),
   async mounted() {
     this.serversPath = await window.file.getUserDataPath("servers.json")
@@ -57,7 +58,8 @@ export default defineComponent({
       this.icon = window.file.load(window.file.join(this.serverSettingsStore.serverData.path, "server-icon.png"), "base64")
     this.minMem = this.serverSettingsStore.serverData.minMem
     this.maxMem = this.serverSettingsStore.serverData.maxMem
-    this.command = this.serverSettingsStore.serverData.command
+    this.jarPath = this.serverSettingsStore.serverData.jarPath
+    this.args = this.serverSettingsStore.serverData.args
     this.setCommitLog()
         .catch(error => console.log(error))
     this.setCollaborators()
@@ -97,7 +99,8 @@ export default defineComponent({
         url: this.serverSettingsStore.serverData.url,
         maxMem: this.maxMem,
         minMem: this.minMem,
-        command: this.command,
+        args: this.args,
+        jarPath: this.jarPath,
         repositoryId: this.serverSettingsStore.serverData.repositoryId,
         owner: this.serverSettingsStore.serverData.owner,
       }
@@ -107,7 +110,8 @@ export default defineComponent({
         url: this.serverSettingsStore.serverData.url,
         maxMem: this.maxMem,
         minMem: this.minMem,
-        command: this.command,
+        args: this.args,
+        jarPath: this.jarPath,
         repositoryId: this.serverSettingsStore.serverData.repositoryId,
         owner: this.serverSettingsStore.serverData.owner,
       }
@@ -420,8 +424,8 @@ export default defineComponent({
     async run() {
       if (this.runningStore.isRunning) return
 
-      if (!this.serverSettingsStore.serverData.command) {
-        this.setError("起動コマンドが設定されていません")
+      if (!this.serverSettingsStore.serverData.jarPath) {
+        this.setError("Jarファイルが設定されていません")
         return
       }
 
@@ -464,33 +468,24 @@ export default defineComponent({
       this.status = "#stopping"
       this.setSnackbar("状態を更新しました")
     },
-    async importCommand() {
-      let script
-      try {
-        const paths = (await window.file.selectFilePath(this.serverSettingsStore.serverData.path))
-        if (!paths) return
-        script = window.file.load(paths[0], "utf-8")
-      }
-      catch (error) {
-        console.log(error)
-        this.setError("ファイルの読み込みに失敗しました")
-        return
-      }
-
-      let notFound = true
-      let lines = script.split("\n")
-      for (let l of lines) {
-        if (l.startsWith("java")) {
-          notFound = false
-          this.command = l
-        }
-      }
-
-      if (notFound) this.setError("起動コマンドが見つかりませんでした")
-    },
     async selectPath() {
       const result = await window.file.selectImagePath(".")
       if (result !== undefined) this.imagePath = result[0]
+    },
+    async selectJar() {
+      let selected = await window.file.selectFilePath(this.serverSettingsStore.serverData.path)
+      if (!selected) return
+      let dirname = window.file.dirname(selected[0])
+      if (dirname !== this.serverSettingsStore.serverData.path) {
+        this.setError("サーバーフォルダ内にあるjarファイルを選択してください")
+        return
+      }
+      if (!selected[0].endsWith(".jar")) {
+        this.setError("jarファイルを選択してください")
+        return
+      }
+
+      this.jarPath = selected[0]
     }
   },
   computed: {
@@ -498,7 +493,8 @@ export default defineComponent({
       let isChanged = false
       isChanged ||= this.maxMem !== this.serverSettingsStore.serverData.maxMem
       isChanged ||= this.minMem !== this.serverSettingsStore.serverData.minMem
-      isChanged ||= this.command !== this.serverSettingsStore.serverData.command
+      isChanged ||= this.jarPath !== this.serverSettingsStore.serverData.jarPath
+      isChanged ||= this.args !== this.serverSettingsStore.serverData.args
       isChanged ||= !!this.imagePath
       isChanged ||= this.deleteImage
 
@@ -630,32 +626,28 @@ export default defineComponent({
           </v-row>
 
           <v-row>
+            <v-col cols="10" align-self="center">
+              <p>{{jarPath}}</p>
+            </v-col>
+            <v-col cols="2">
+              <v-btn
+                  width="100%"
+                  color="primary"
+                  size="large"
+                  @click="selectJar"
+              >jarを選択</v-btn>
+            </v-col>
+          </v-row>
+          <v-row>
             <v-col>
               <v-text-field
                   variant="outlined"
-                  label="起動コマンド"
-                  v-model="command"
-                  :hide-details="true"
-                  placeholder="例：java -jar server.jar nogui">
-                <template v-slot:append>
-                  <v-tooltip location="bottom">
-                    <template v-slot:activator="{props}">
-                      <v-btn
-                          size="large"
-                          color="primary"
-                          style="text-transform: none"
-                          v-bind="props"
-                          @click="importCommand"
-                          variant="text"
-                      >batからインポート</v-btn>
-                    </template>
-                    <p>シェルスクリプトからもインポートすることができます</p>
-                  </v-tooltip>
-                </template>
-              </v-text-field>
+                  label="Javaオプション"
+                  v-model="args"
+                  hide-details
+              />
             </v-col>
           </v-row>
-
           <v-row>
             <v-col cols="10" align-self="center">
               <div class="d-flex flex-row align-center">
