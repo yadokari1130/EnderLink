@@ -51,7 +51,7 @@ export default defineComponent({
       window.server.get("https://raw.githubusercontent.com/yadokari1130/EnderLink/master/news.json")
           .then(result => {
             const news = JSON.parse(result)
-            if (!showedNews && news.first) this.news = news[news.first]
+            if (!showedNews && news.latest) this.news = news[news.latest]
             else this.news = news[news[showedNews].next]
             if (this.news) {
               this.$nextTick(() => {
@@ -189,5 +189,8 @@ export default defineComponent({
   cursor: pointer;
   color: blue;
   width: fit-content;
+}
+.link:hover {
+  text-decoration: underline;
 }
 </style>

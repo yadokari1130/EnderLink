@@ -56,9 +56,4 @@ export default defineComponent({
 </template>
 
 <style scoped>
-.link {
-  cursor: pointer;
-  color: blue;
-  width: fit-content;
-}
 </style>
