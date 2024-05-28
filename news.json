@@ -1,3 +1,8 @@
 {
-
+	"latest": "2024-05-28-22-04",
+	"2024-05-28-22-04": {
+		"id": "2024-05-28-22-04",
+		"content": "<p>β0.0.1を公開しました。以前のバージョンで作成したサーバーは正常に動作しないため、一度PCから削除し、GitHubからインポートでもう一度追加しなおしてください。</p><p>詳しくはこちら<span class='link'>https://github.com/yadokari1130/EnderLink/releases/tag/v0.0.1-beta</span></p>",
+		"next": null
+	}
 }
