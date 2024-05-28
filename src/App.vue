@@ -48,7 +48,7 @@ export default defineComponent({
   methods: {
     async showNews() {
       let showedNews = await window.store.get("showedNews")
-      window.server.get("https://raw.githubusercontent.com/yadokari1130/EnderLink/master/news.json")
+      window.server.get(`https://raw.githubusercontent.com/yadokari1130/EnderLink/master/news.json?t=${Date.now()}`)
           .then(result => {
             const news = JSON.parse(result)
             if (!showedNews && news.latest) this.news = news[news.latest]
