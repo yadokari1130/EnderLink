@@ -10,6 +10,7 @@ export interface ServerData {
   name: string
   path: string
   args: string
+  javaPath: string
   jarPath: string
   maxMem: number
   minMem: number

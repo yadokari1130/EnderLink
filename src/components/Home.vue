@@ -16,16 +16,18 @@ export default defineComponent({
       return ServerCard.ServerData
     },
     joinedPath() {
+      if (!this.path) return null
       return window.file.resolve(window.file.join(this.path, this.server?.name ? this.server.name : ""))
     },
     newJoinedPath() {
+      if (!this.path) return null
       return window.file.resolve(window.file.join(this.path, this.name))
     }
   },
   data: () => ({
     datas: {},
     dialog: false,
-    path: "",
+    path: null,
     name: "",
     maxMem: 2048,
     minMem: 0,
@@ -36,6 +38,7 @@ export default defineComponent({
     githubValidation: (value: string) => (value.match(/[\w\-]{2,255}/g) && value.match(/[\w\-]{2,255}/g)[0] === value) || "名前は2文字以上255文字以下かつ、半角英数字・アンダーバー・ハイフンのみが使えます",
     server: null,
     args: "",
+    javaPath: "",
     jarPath: "",
     serverSettingsStore: useServerSettingsStore(),
     snackbarMessage: "",
@@ -51,6 +54,7 @@ export default defineComponent({
     singleWorldDialog: false,
     singleWorlds: [],
     serverFiles: [],
+    installedJava: null
   }),
   async mounted() {
     this.serversPath = await window.file.getUserDataPath("servers.json")
@@ -72,6 +76,7 @@ export default defineComponent({
             this.minecraftVersions.push(v)
           }
         })
+    this.getJavaVersion()
   },
   methods: {
     setSnackbar(message: string) {
@@ -112,16 +117,18 @@ export default defineComponent({
         maxMem: this.maxMem,
         minMem: this.minMem,
         args: this.args,
+        javaPath: this.javaPath,
         jarPath: window.file.join(this.joinedPath, this.jarPath),
         repositoryId: this.server.id,
         owner: this.server.owner.login
       }
       window.file.save(this.serversPath, JSON.stringify(this.datas))
       this.server = null
-      this.path = ""
+      this.path = null
       this.minMem = 0
       this.maxMem = 0
       this.args = ""
+      this.javaPath = ""
       this.jarPath = ""
 
       this.dialog = false
@@ -225,15 +232,18 @@ export default defineComponent({
         maxMem: this.maxMem,
         minMem: this.minMem,
         args: this.args,
+        javaPath: this.javaPath,
         repositoryId: repositoryId,
-        owner: owner
+        owner: owner,
+        jarPath: create ? window.file.join(this.path, "server.jar") : this.jarPath
       }
       window.file.save(this.serversPath, JSON.stringify(this.datas))
       this.name = ""
-      this.path = ""
+      this.path = null
       this.minMem = 0
       this.maxMem = 0
       this.args = ""
+      this.javaPath = ""
       this.jarPath = ""
       this.eula = false
       this.selectedWorldPath = null
@@ -336,12 +346,46 @@ export default defineComponent({
       }
 
       this.jarPath = selected[0]
+    },
+    async selectJavaPath() {
+      let selected = await window.file.selectFilePath(".")
+      if (!selected) return
+      let basename = window.file.basename(selected[0])
+      if (basename !== "javaw.exe") {
+        this.setError("javaw.exeを指定してください")
+        return
+      }
+
+      this.javaPath = selected[0]
+    },
+    getJavaVersion() {
+      try {
+        this.installedJava = window.command.spawnSync("java -version")[1].split("\n")[0]
+      }
+      catch (error) {
+        console.log(error)
+        this.installedJava = null
+      }
+    },
+    async openCreateDialog() {
+      this.dialog = true
+      this.path = null
+      this.name = ""
+      this.server = null
+      this.args = ""
+      this.javaPath = ""
+      this.jarPath = ""
+      this.eula = false
+      this.selectedWorldPath = null
+      await this.fetchAllRepository()
     }
   },
   watch: {
     async tab(newValue, oldValue) {
       this.name = ""
       this.args = ""
+      this.path = null
+      this.javaPath = ""
       this.jarPath = ""
       this.maxMem = 2048
       this.minMem = 0
@@ -408,22 +452,16 @@ export default defineComponent({
             size="x-large"
             color="primary"
             elevation="8"
-            @click="() => {
-              this.dialog = true
-              this.path = ''
-              this.name = ''
-              this.server = null
-              this.args = ''
-              this.jarPath = ''
-              this.eula = false
-              this.selectedWorldPath = null
-            }"
-            :disabled="!githubStore.userData || !githubStore.availableSSH || !githubStore.gitVersion"
+            @click="openCreateDialog"
+            :disabled="!githubStore.userData || !githubStore.availableSSH || !githubStore.gitVersion || !installedJava"
         />
       </div>
     </template>
-    <p>サーバーを追加するためには基本設定画面から</p>
-    <p>Gitのインストール、GitHubにログイン、SSHキーの追加を行ってください</p>
+    <p>サーバーを追加するためには基本設定画面から以下のことを行ってください</p>
+    <li v-if="!githubStore.userData">GitHubにログイン</li>
+    <li v-if="!githubStore.availableSSH">SSHキーの追加</li>
+    <li v-if="!githubStore.gitVersion">Gitのインストール</li>
+    <li v-if="!installedJava">Javaのインストール</li>
   </v-tooltip>
 
   <v-dialog
@@ -538,16 +576,44 @@ export default defineComponent({
                 />
               </v-col>
             </v-row>
-            <v-row>
-              <v-col cols="12">
-                <v-text-field
-                    variant="outlined"
-                    label="Javaオプション"
-                    v-model="args"
-                    hide-details
-                />
-              </v-col>
-            </v-row>
+            <v-expansion-panels variant="accordion" class="mt-6 mb-3 border-opacity-25 border rounded" flat>
+              <v-expansion-panel title="詳細なオプション">
+                <v-expansion-panel-text>
+                  <v-row>
+                    <v-col cols="12">
+                      <v-text-field
+                          variant="outlined"
+                          hide-details
+                          label="Javaのパスの指定"
+                          :placeholder="`検出されたJava(${installedJava})を使う`"
+                          persistent-placeholder
+                          clearable
+                          persistent-clear
+                          v-model="javaPath"
+                      >
+                        <template v-slot:append>
+                          <v-btn
+                              color="primary"
+                              size="large"
+                              width="100%"
+                              @click="selectJavaPath"
+                              style="text-transform: none"
+                          >javaw.exeを選ぶ</v-btn>
+                        </template>
+                      </v-text-field>
+                    </v-col>
+                    <v-col cols="12">
+                      <v-text-field
+                          variant="outlined"
+                          label="JVMの引数"
+                          v-model="args"
+                          hide-details
+                      />
+                    </v-col>
+                  </v-row>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
             <v-row>
               <v-col>
                 <v-checkbox v-model="eula">
@@ -621,16 +687,44 @@ export default defineComponent({
                 >jarを選択</v-btn>
               </v-col>
             </v-row>
-            <v-row>
-              <v-col>
-                <v-text-field
-                    variant="outlined"
-                    label="Javaオプション"
-                    v-model="args"
-                    hide-details
-                />
-              </v-col>
-            </v-row>
+            <v-expansion-panels variant="accordion" class="mt-6 mb-3 border-opacity-25 border rounded" flat>
+              <v-expansion-panel title="詳細なオプション">
+                <v-expansion-panel-text>
+                  <v-row>
+                    <v-col cols="12">
+                      <v-text-field
+                          variant="outlined"
+                          hide-details
+                          label="Javaのパスの指定"
+                          :placeholder="`検出されたJava(${installedJava})を使う`"
+                          persistent-placeholder
+                          clearable
+                          persistent-clear
+                          v-model="javaPath"
+                      >
+                        <template v-slot:append>
+                          <v-btn
+                              color="primary"
+                              size="large"
+                              width="100%"
+                              @click="selectJavaPath"
+                              style="text-transform: none"
+                          >javaw.exeを選ぶ</v-btn>
+                        </template>
+                      </v-text-field>
+                    </v-col>
+                    <v-col cols="12">
+                      <v-text-field
+                          variant="outlined"
+                          label="JVMの引数"
+                          v-model="args"
+                          hide-details
+                      />
+                    </v-col>
+                  </v-row>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
           </v-window-item>
           <v-window-item :value="3">
             <v-row class="mt-2">
@@ -640,7 +734,16 @@ export default defineComponent({
                     variant="outlined"
                     v-model="server"
                     :items="repositories.map(r => ({title: r.full_name, value: r}))"
-                />
+                >
+                  <template v-slot:append>
+                    <v-btn
+                        icon="mdi-sync"
+                        variant="text"
+                        size="large"
+                        @click="fetchAllRepository"
+                    />
+                  </template>
+                </v-select>
               </v-col>
               <v-col cols="3">
                 <v-btn
@@ -687,16 +790,45 @@ export default defineComponent({
                 />
               </v-col>
             </v-row>
-            <v-row>
-              <v-col cols="12">
-                <v-text-field
-                    variant="outlined"
-                    label="Javaオプション"
-                    v-model="args"
-                    hide-details
-                />
-              </v-col>
-            </v-row>
+
+            <v-expansion-panels variant="accordion" class="mt-6 mb-3 border-opacity-25 border rounded" flat>
+              <v-expansion-panel title="詳細なオプション">
+                <v-expansion-panel-text>
+                  <v-row>
+                    <v-col cols="12">
+                      <v-text-field
+                          variant="outlined"
+                          hide-details
+                          label="Javaのパスの指定"
+                          :placeholder="`検出されたJava(${installedJava})を使う`"
+                          persistent-placeholder
+                          clearable
+                          persistent-clear
+                          v-model="javaPath"
+                      >
+                        <template v-slot:append>
+                          <v-btn
+                              color="primary"
+                              size="large"
+                              width="100%"
+                              @click="selectJavaPath"
+                              style="text-transform: none"
+                          >javaw.exeを選ぶ</v-btn>
+                        </template>
+                      </v-text-field>
+                    </v-col>
+                    <v-col cols="12">
+                      <v-text-field
+                          variant="outlined"
+                          label="JVMの引数"
+                          v-model="args"
+                          hide-details
+                      />
+                    </v-col>
+                  </v-row>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
           </v-window-item>
         </v-window>
       </v-card-text>
@@ -717,9 +849,9 @@ export default defineComponent({
             }"
             size="large"
             :disabled="!(
-                (tab === 1 && this.githubValidation(this.name) === true && this.eula) ||
-                (tab === 2 && this.githubValidation(this.name) === true && this.jarPath) ||
-                (tab === 3 && this.server && this.jarPath))"
+                (tab === 1 && this.path && this.githubValidation(this.name) === true && this.eula) ||
+                (tab === 2 && this.path && this.githubValidation(this.name) === true && this.jarPath) ||
+                (tab === 3 && this.path && this.server && this.jarPath))"
         >追加</v-btn>
       </v-card-actions>
     </v-card>

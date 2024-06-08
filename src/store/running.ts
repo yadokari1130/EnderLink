@@ -2,7 +2,6 @@ import { defineStore } from 'pinia';
 import {ServerData} from "../components/ServerCard.vue"
 import { useGitHubStore } from "./github";
 import { useNgrokStore } from "./ngrok";
-import { Listener } from "@ngrok/ngrok"
 import { useCloudflaredStore } from "./cloudflared";
 
 export const useRunningStore = defineStore("running", {
@@ -110,9 +109,10 @@ export const useRunningStore = defineStore("running", {
             this.serverData = serverData
             this.icon = icon
 
-            let command = `java -Xmx${serverData.maxMem}M -Xms${serverData.minMem}M `
+            let command = `"${serverData.javaPath || "java"}"`
+            command += ` -Xmx${serverData.maxMem}M -Xms${serverData.minMem}M `
             command += this.serverData.args
-            command += ` -jar ${serverData.jarPath}`
+            command += ` -jar "${serverData.jarPath}"`
             command += " nogui"
 
             console.log(command)

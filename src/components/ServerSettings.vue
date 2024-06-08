@@ -49,8 +49,13 @@ export default defineComponent({
     deleteImage: false,
     imagePath: "",
     jarPath: "",
-    args: ""
+    args: "",
+    javaPath: "",
+    installedJava: null
   }),
+  created() {
+    this.getJavaVersion()
+  },
   async mounted() {
     this.serversPath = await window.file.getUserDataPath("servers.json")
     if (window.file.exists(this.serversPath)) this.datas = JSON.parse(window.file.load(this.serversPath, "utf-8"))
@@ -60,6 +65,7 @@ export default defineComponent({
     this.maxMem = this.serverSettingsStore.serverData.maxMem
     this.jarPath = this.serverSettingsStore.serverData.jarPath
     this.args = this.serverSettingsStore.serverData.args
+    this.javaPath = this.serverSettingsStore.serverData.javaPath
     this.setCommitLog()
         .catch(error => console.log(error))
     this.setCollaborators()
@@ -93,6 +99,16 @@ export default defineComponent({
     async save() {
       this.setOverlay("保存中")
 
+      try {
+        await window.git.download(this.serverSettingsStore.serverData.path)
+        await this.setCommitLog()
+      }
+      catch (error) {
+        console.log(error)
+        this.setError("データのダウンロードに失敗しました")
+        return
+      }
+
       this.serverSettingsStore.serverData = {
         name: this.serverSettingsStore.serverData.name,
         path: this.serverSettingsStore.serverData.path,
@@ -100,6 +116,7 @@ export default defineComponent({
         maxMem: this.maxMem,
         minMem: this.minMem,
         args: this.args,
+        javaPath: this.javaPath,
         jarPath: this.jarPath,
         repositoryId: this.serverSettingsStore.serverData.repositoryId,
         owner: this.serverSettingsStore.serverData.owner,
@@ -111,6 +128,7 @@ export default defineComponent({
         maxMem: this.maxMem,
         minMem: this.minMem,
         args: this.args,
+        javaPath: this.javaPath,
         jarPath: this.jarPath,
         repositoryId: this.serverSettingsStore.serverData.repositoryId,
         owner: this.serverSettingsStore.serverData.owner,
@@ -486,7 +504,27 @@ export default defineComponent({
       }
 
       this.jarPath = selected[0]
-    }
+    },
+    getJavaVersion() {
+      try {
+        this.installedJava = window.command.spawnSync("java -version")[1].split("\n")[0]
+      }
+      catch (error) {
+        console.log(error)
+        this.installedJava = null
+      }
+    },
+    async selectJavaPath() {
+      let selected = await window.file.selectFilePath(".")
+      if (!selected) return
+      let basename = window.file.basename(selected[0])
+      if (basename !== "javaw.exe") {
+        this.setError("javaw.exeを指定してください")
+        return
+      }
+
+      this.javaPath = selected[0]
+    },
   },
   computed: {
     isChanged() {
@@ -495,6 +533,7 @@ export default defineComponent({
       isChanged ||= this.minMem !== this.serverSettingsStore.serverData.minMem
       isChanged ||= this.jarPath !== this.serverSettingsStore.serverData.jarPath
       isChanged ||= this.args !== this.serverSettingsStore.serverData.args
+      isChanged ||= this.javaPath !== this.serverSettingsStore.serverData.javaPath
       isChanged ||= !!this.imagePath
       isChanged ||= this.deleteImage
 
@@ -639,16 +678,6 @@ export default defineComponent({
             </v-col>
           </v-row>
           <v-row>
-            <v-col>
-              <v-text-field
-                  variant="outlined"
-                  label="Javaオプション"
-                  v-model="args"
-                  hide-details
-              />
-            </v-col>
-          </v-row>
-          <v-row>
             <v-col cols="10" align-self="center">
               <div class="d-flex flex-row align-center">
                 <p class="text-center">{{imagePath}}</p>
@@ -676,6 +705,45 @@ export default defineComponent({
               />
             </v-col>
           </v-row>
+
+          <v-expansion-panels variant="accordion" class="my-3 border-opacity-25 border rounded" flat>
+            <v-expansion-panel title="詳細なオプション">
+              <v-expansion-panel-text>
+                <v-row>
+                  <v-col cols="12">
+                    <v-text-field
+                        variant="outlined"
+                        hide-details
+                        label="Javaのパスの指定"
+                        :placeholder="`検出されたJava(${installedJava})を使う`"
+                        persistent-placeholder
+                        clearable
+                        persistent-clear
+                        v-model="javaPath"
+                    >
+                      <template v-slot:append>
+                        <v-btn
+                            color="primary"
+                            size="large"
+                            width="100%"
+                            @click="selectJavaPath"
+                            style="text-transform: none"
+                        >javaw.exeを選ぶ</v-btn>
+                      </template>
+                    </v-text-field>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field
+                        variant="outlined"
+                        label="JVMの引数"
+                        v-model="args"
+                        hide-details
+                    />
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+          </v-expansion-panels>
 
           <v-row class="mt-8">
             <v-col cols="12">
