@@ -1,6 +1,7 @@
 <!-- omit in toc -->
 # EnderLink
 
+<!-- omit in toc -->
 # 特徴
 ## サーバーデータの同期・疑似24時間サーバー化
 複数人でサーバーデータを同期することができます  
@@ -19,6 +20,7 @@
 また好きなタイミングでバックアップを取ることもできます  
 さらに、取ったバックアップまで簡単に戻すことができます
 
+<!-- omit in toc -->
 # 注意
 ## 利用規約
 使用する前に[利用規約](https://github.com/yadokari1130/EnderLink/blob/master/LICENSE)を読み、同意してください
@@ -40,6 +42,7 @@ GitHub: [Issue](https://github.com/yadokari1130/EnderLink/issues)
 >
 > 追加の情報をお願いすることもありますが、情報がないと解決できないため、ご協力お願いします
 
+<!-- omit in toc -->
 # 目次
 - [ダウンロード](#ダウンロード)
   - [https://github.com/yadokari1130/EnderLink/releases](#httpsgithubcomyadokari1130enderlinkreleases)
