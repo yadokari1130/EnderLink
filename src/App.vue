@@ -15,9 +15,23 @@ export default defineComponent({
     colors: {"起動中": "green", "終了中": "red", "停止済み": "grey", "エラー": "red"},
     dialog: false,
     startPath: null,
-    news: null
+    news: null,
+    agreement: false
   }),
-  async mounted() {
+  async beforeCreate() {
+    window.file.mkdir(await window.file.getUserDataPath("scripts"))
+    window.file.mkdir(await window.file.getUserDataPath("temp"))
+    if (window.shell.getPlatform() === "win32") {
+      let shPath = await window.file.getUserDataPath("scripts", "hostbasedAuth.bat")
+      if (!window.file.exists(shPath)) window.file.save(shPath, "@echo off\nssh -T git@github.com")
+    }
+    else {
+      let shPath = await window.file.getUserDataPath("scripts", "hostbasedAuth.sh")
+      if (!window.file.exists(shPath)) window.file.save(shPath, "#!/bin/bash\nssh -T git@github.com")
+    }
+    
+    await this.showNews()
+
     await this.ngrokStore.fetchData(window)
     await this.githubStore.init(window)
     await this.githubStore.fetchData(window)
@@ -31,20 +45,6 @@ export default defineComponent({
 
     if (this.startPath) await router.push(this.startPath)
   },
-  async beforeCreate() {
-    window.file.mkdir(await window.file.getUserDataPath("scripts"))
-    window.file.mkdir(await window.file.getUserDataPath("temp"))
-    if (window.shell.getPlatform() === "win32") {
-      let shPath = await window.file.getUserDataPath("scripts", "hostbasedAuth.bat")
-      if (!window.file.exists(shPath)) window.file.save(shPath, "@echo off\nssh -T git@github.com")
-    }
-    else {
-      let shPath = await window.file.getUserDataPath("scripts", "hostbasedAuth.sh")
-      if (!window.file.exists(shPath)) window.file.save(shPath, "#!/bin/bash\nssh -T git@github.com")
-    }
-
-    await this.showNews()
-  },
   methods: {
     async showNews() {
       let showedNews = await window.store.get("showedNews")
@@ -56,11 +56,9 @@ export default defineComponent({
             if (this.news) {
               this.$nextTick(() => {
                 const newsRef = this.$refs.news
-                if (newsRef) {
-                  newsRef.querySelectorAll(".link").forEach(link => {
-                    link.addEventListener("click", () => this.openExternal(link.innerHTML))
-                  })
-                }
+                newsRef?.querySelectorAll(".link").forEach(link => {
+                  link.addEventListener("click", () => this.openExternal(link.innerHTML))
+                })
               })
             }
           })
@@ -97,7 +95,7 @@ export default defineComponent({
             to="/"
             router/>
         <v-list-item
-            title="Cloudflare Tunnel"
+            title="ポート開放不要機能"
             to="/cloudflare-tunnel"
             router
             prepend-icon="mdi-lan-connect"
@@ -141,16 +139,26 @@ export default defineComponent({
       <router-view/>
     </v-main>
 
-    <v-bottom-navigation :active="!!news" height="75">
-      <div class="ma-2">
-        <h3>[お知らせ]</h3>
-        <div ref="news" v-html="news?.content"/>
-      </div>
-      <v-spacer/>
-      <v-btn @click="closeNews">
-        閉じる
-      </v-btn>
-    </v-bottom-navigation>
+    <v-fade-transition>
+      <v-layout-item model-value position="bottom" size="105" :style="`background-color: white`" v-show="!!news">
+        <v-row style="height: 105px" class="ma-0 pa-0">
+          <v-col cols="11" class="pa-2 pl-8">
+            <p class="font-weight-bold">[お知らせ]</p>
+            <div ref="news" v-html="news?.content" class="text-body-2"/>
+          </v-col>
+          <v-col cols="1" align-self="stretch" class="pa-2">
+            <v-btn
+                @click="closeNews"
+                width="100%"
+                height="100%"
+                variant="text"
+            >
+              閉じる
+            </v-btn>
+          </v-col>
+        </v-row>
+      </v-layout-item>
+    </v-fade-transition>
   </v-app>
 
   <v-dialog
@@ -167,6 +175,15 @@ export default defineComponent({
           <v-radio label="サーバー一覧(主にサーバー管理を行う方向け)" value="/"/>
           <v-radio label="ポート開放不要機能(サーバー管理は行わず、主に他のサーバーに接続する方向け)" value="/cloudflare-tunnel"/>
         </v-radio-group>
+
+        <v-checkbox-btn v-model="agreement">
+          <template v-slot:label>
+            <span
+                class="link"
+                @click.prevent="openExternal('https://github.com/yadokari1130/EnderLink/blob/master/LICENSE')"
+            >利用規約</span>に同意する
+          </template>
+        </v-checkbox-btn>
       </v-card-text>
       <v-divider/>
       <v-card-actions>
@@ -175,7 +192,7 @@ export default defineComponent({
             variant="text"
             size="large"
             @click="setStartPath"
-            :disabled="!startPath"
+            :disabled="!startPath || !agreement"
         >
           決定
         </v-btn>
