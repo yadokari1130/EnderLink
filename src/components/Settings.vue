@@ -111,6 +111,34 @@ export default defineComponent({
       )
       this.term.open(this.$refs.terminal)
     },
+    async installAmazonCorretto() {
+      this.term = new Terminal()
+      this.$refs.terminal.innerHTML = ""
+      window.command.spawn(`winget install --id Amazon.Corretto.${this.javaVersion} -e --source winget`, ".",
+          data => {
+            this.term.write(data)
+            console.log(data)
+          },
+          data => {
+            this.term.write(data)
+            console.log(data)
+          },
+          async code => {
+            this.getJavaVersion()
+            this.installing = false
+          }
+      )
+      this.term.open(this.$refs.terminal)
+    },
+    getJavaVersion() {
+      try {
+        this.installedJava = window.command.spawnSync("java -version")[1].split("\n")[0]
+      }
+      catch (error) {
+        console.log(error)
+        this.installedJava = null
+      }
+    },
     sendCommand() {
       this.term.write(this.command)
       window.command.write(this.command)
@@ -134,7 +162,10 @@ export default defineComponent({
     installing: boolean,
     command: string,
     term: Terminal | null,
-    startPath: string
+    startPath: string,
+    javaVersion: string,
+    installedJava: string | null,
+    changeJavaVersion: boolean
   } => ({
     errorMessage: "",
     errorSnackbar: false,
@@ -152,7 +183,10 @@ export default defineComponent({
     installing: false,
     command: "",
     term: null,
-    startPath: ""
+    startPath: "",
+    javaVersion: "21",
+    installedJava: null,
+    changeJavaVersion: false
   }),
   async created() {
     await this.githubStore.fetchData(window)
@@ -160,6 +194,7 @@ export default defineComponent({
     this.isWin = window.shell.getPlatform() === "win32"
     this.windowMaximize = (await window.store.get("windowMaximize")) === "true"
     this.startPath = await window.store.get("startPath")
+    this.getJavaVersion()
   }
 })
 </script>
@@ -234,6 +269,54 @@ export default defineComponent({
         color="primary"
         v-else
     >GitHubでログイン</v-btn>
+  </div>
+
+  <h2 class="ma-4">Java</h2>
+  <div class="border rounded pa-4">
+    <h3 class="mt-4 mb-2">Java：{{installedJava ? `インストール済み (${installedJava})` : "未インストール"}}</h3>
+    <div class="d-inline-block" v-if="isWin" style="width: 100%">
+      <div class="d-flex flex-row align-center">
+        <v-checkbox-btn v-model="changeJavaVersion">
+          <template v-slot:label>
+            <p>インストールするバージョンを切り替え</p>
+            <v-tooltip location="bottom">
+              <template v-slot:activator="{props}">
+                <v-icon v-bind="props" size="large" class="ml-2">mdi-help-circle-outline</v-icon>
+              </template>
+              <p>バニラで遊ぶ場合、どのMinecraftのバージョンであっても基本的にJavaのバージョン切り替えは不要です</p>
+              <p>Forgeなどで遊ぶ場合はForgeのバージョンにあったJavaのバージョンを選択してください</p>
+            </v-tooltip>
+          </template>
+        </v-checkbox-btn>
+      </div>
+      <v-select
+          label="Javaバージョン"
+          :items="['21', '17', '11', '8']"
+          v-model="javaVersion"
+          v-if="changeJavaVersion"
+          variant="outlined"
+      />
+      <v-tooltip location="bottom">
+        <template v-slot:activator="{props}">
+          <div class="d-inline-block" v-bind="props" style="width: 100%">
+            <v-btn
+                width="100%"
+                size="large"
+                color="primary"
+                @click="() => {this.installing = true; this.installAmazonCorretto()}"
+                style="text-transform: none"
+                :disabled="runningStore.isRunning"
+            >
+              Javaをインストール
+            </v-btn>
+          </div>
+        </template>
+        <div>
+          <p>Javaはサーバーの起動に必要なプログラムです</p>
+          <p v-if="runningStore.isRunning">起動中のサーバーを停止してください</p>
+        </div>
+      </v-tooltip>
+    </div>
   </div>
 
   <h2 class="ma-4">アプリケーション設定</h2>

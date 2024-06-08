@@ -104,6 +104,7 @@ export interface ICommand {
     execSync: (command: string) => string
     exec: (command: string, onOut: (error: child_process.ExecException, stdout: string, stderr: string) => void) => ChildProcess
     spawn: (command: string, path: string, onOut: (data: string) => void, onError: (data: string) => void, onClose: (code: number) => void) => void
+    spawnSync: (command: string) => [string, string, number | null]
     write: (command: string) => void
     kill: () => void
 }

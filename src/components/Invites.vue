@@ -28,7 +28,7 @@ export default defineComponent({
 
       this.githubStore.removeInvitations.push(invitationId)
 
-      this.snackbarMessage = "招待を受け入れました\nホーム画面からサーバーを追加してください"
+      this.snackbarMessage = "招待を受け入れました\nホーム画面からサーバーを追加してください\nサーバー一覧に表示されるまでには時間がかかる可能性があります"
       this.snackbarColor = undefined
       this.snackbar = true
 

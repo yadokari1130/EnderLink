@@ -173,6 +173,13 @@ contextBridge.exposeInMainWorld("command", {
     proc.stderr.on("data", data => onError(Buffer.from(data, "utf-8").toString()))
     proc.on("close", onClose)
   },
+  spawnSync: (command: string) => {
+    const c = command.split(" ")[0]
+    const args = command.split(" ").splice(1)
+    let syncProc = child_process.spawnSync(c, args, {shell: true})
+
+    return [syncProc.stdout?.toString(), syncProc.stderr?.toString(), syncProc.status]
+  },
   write: (command: string) => {
     proc?.stdin.write(command + "\n")
   },
