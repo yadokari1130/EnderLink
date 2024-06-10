@@ -470,18 +470,18 @@ export default defineComponent({
       transition="slide-y-transition"
   >
     <v-card title="サーバーを追加">
-      <v-tabs
-          v-model="tab"
-          align-tabs="center"
-          color="primary"
-      >
-        <v-row justify="space-evenly">
-          <v-col cols="4"><v-tab :value="1" width="100%">新規作成</v-tab></v-col>
-          <v-col cols="4"><v-tab :value="2" width="100%">PCからインポート</v-tab></v-col>
-          <v-col cols="4"><v-tab :value="3" width="100%">GitHubからインポート</v-tab></v-col>
-        </v-row>
-      </v-tabs>
       <v-card-text>
+        <v-tabs
+            v-model="tab"
+            align-tabs="center"
+            color="primary"
+        >
+          <v-row justify="space-evenly">
+            <v-col cols="4"><v-tab :value="1" width="100%">新規作成</v-tab></v-col>
+            <v-col cols="4"><v-tab :value="2" width="100%">PCからインポート</v-tab></v-col>
+            <v-col cols="4"><v-tab :value="3" width="100%">GitHubからインポート</v-tab></v-col>
+          </v-row>
+        </v-tabs>
         <v-window v-model="tab">
           <v-window-item :value="1">
             <v-row class="mt-2">
