@@ -33,7 +33,7 @@ export default defineComponent({
         window.file.mkdir(sshDir)
         window.file.rm(await window.file.getUserDataPath("ssh", "id_ed25519"))
         window.file.rm(await window.file.getUserDataPath("ssh", "id_ed25519.pub"))
-        window.command.execSync(`cd ${window.shell.getPlatform() === "win32" ? "/d" : ""} ${sshDir} && ssh-keygen -t ed25519 -f id_ed25519 -N ""`)
+        window.command.execSync(`cd ${window.shell.getPlatform() === "win32" ? "/d" : ""} "${sshDir}" && ssh-keygen -t ed25519 -f id_ed25519 -N ""`)
       }
       catch (error) {
         console.log(error)
