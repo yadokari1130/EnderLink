@@ -71,11 +71,17 @@ export const useRunningStore = defineStore("running", {
 
             if (this.cloudflaredStore.useCloudflared) {
                 try {
-                    let port = window.file.load(window.file.join(serverData?.path || "", "server.properties"), "utf-8")
-                    let matched = port.match(/server-port=([0-9]+)/)
-                    if (!matched || !matched[1]) return "#loadError"
+                    let port = "25565"
+                    const propertiesPath = window.file.join(serverData?.path || "", "server.properties")
+                    if (window.file.exists(propertiesPath)) {
+                        const properties = window.file.load(propertiesPath, "utf-8")
+                        let matched = properties.match(/server-port=([0-9]+)/)
+                        if (!matched || !matched[1]) return "#loadError"
+                        port = matched[1]
+                    }
 
-                    this.url = (await window.cloudflared.tunnel(matched[1])).replace("https://", "")
+                    console.log(port)
+                    this.url = (await window.cloudflared.tunnel(port)).replace("https://", "")
                 }
                 catch (error) {
                     console.log(error)
