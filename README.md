@@ -62,6 +62,7 @@ GitHub: [Issue](https://github.com/yadokari1130/EnderLink/issues)
   - [GitHubログイン](#githubログイン)
   - [SSHキー登録](#sshキー登録)
   - [Cloudflare Tunnelのインストール(ポート開放不要機能)](#cloudflare-tunnelのインストールポート開放不要機能)
+- [Forgeサーバーを起動する際の注意](#forgeサーバーを起動する際の注意)
 - [サーバー作成](#サーバー作成)
   - [新しくサーバーを作成する](#新しくサーバーを作成する)
   - [PCからインポートする](#pcからインポートする)
@@ -158,6 +159,41 @@ Cloudflare Tunnelというサービスを利用することで、ポート開放
 使用しているOSに関わらず、Cloudflare Tunnel画面から「cloudflare Tunnelのインストール」をクリックし、インストールを行ってください  
 インストール中の操作は不要です
 
+# Forgeサーバーを起動する際の注意
+新しいバージョンのForgeではjarファイルから直接起動することは出来ず、`run.bat`を使って起動する方法に変更されました  
+しかし自動的に生成される`run.bat`をそのまま使うとログが文字化けする、GUIが立ち上がってしまう問題があります  
+そこで以下のように追加することで修正することができます
+- `java`のあとに`-Dfile.encoding=UTF-8`を追加
+- `%*`のあとに`nogui`を追加
+
+修正例
+```bat
+修正前(自動生成されたもの)
+
+@echo off
+REM Forge requires a configured set of both JVM and program arguments.
+REM Add custom JVM arguments to the user_jvm_args.txt
+REM Add custom program arguments {such as nogui} to this file in the next line before the %* or
+REM  pass them to this script directly
+java @user_jvm_args.txt @libraries/net/minecraftforge/forge/1.19.2-43.4.0/win_args.txt %*
+pause
+```
+
+```bat
+修正後
+
+@echo off
+REM Forge requires a configured set of both JVM and program arguments.
+REM Add custom JVM arguments to the user_jvm_args.txt
+REM Add custom program arguments {such as nogui} to this file in the next line before the %* or
+REM  pass them to this script directly
+java -Dfile.encoding=UTF-8 @user_jvm_args.txt @libraries/net/minecraftforge/forge/1.19.2-43.4.0/win_args.txt %* nogui
+pause
+```
+なお、バージョンによって生成される内容は変わるため、これをそのままコピペしても動きません
+
+また、メモリ量などのJVM引数はEnderLinkから指定することはできないため、`user_jvm_args.txt`に記載してください
+
 # サーバー作成
 ## 新しくサーバーを作成する
 1.18以上のバニラサーバーはアプリ内から作成することができます  
@@ -221,9 +257,10 @@ EnderLinkの利用規約ではありません
 ### 最小メモリ
 サーバーに使える最小のメモリ量を選択します  
 使っているPCのスペックに合わせて選択してください
-### jarを選択
-サーバーのjarファイルを選択します
+### jar/batを選択
+サーバーのjarファイルか、起動用のバッチファイルを選択します
 ### 詳細なオプション
+バッチファイルを指定している場合は反映されません
 #### Javaのパスの指定
 サーバーを起動する際のJavaのパスを指定します  
 指定していなかった場合、自動検出されたJavaが使用されます  
@@ -251,9 +288,10 @@ Javaの最新バージョンがインストールされている状態でバニ�
 ### 最小メモリ
 サーバーに使える最小のメモリ量を選択します  
 使っているPCのスペックに合わせて選択してください
-### jarを選択
-サーバーのjarファイルを選択します
+### jar/batを選択
+サーバーのjarファイルか、起動用のバッチファイルを選択します
 ### 詳細なオプション
+バッチファイルを指定している場合は反映されません
 #### Javaのパスの指定
 サーバーを起動する際のJavaのパスを指定します  
 指定していなかった場合、自動検出されたJavaが使用されます  
@@ -280,9 +318,10 @@ Javaの最新バージョンがインストールされている状態でバニ�
 ### 最小メモリ
 サーバーに使える最小のメモリ量を選択します  
 使っているPCのスペックに合わせて選択してください
-### jarを選択
-サーバーのjarファイルを選択します
+### jar/batを選択
+サーバーのjarファイルか、起動用のバッチファイルを選択します
 ### 詳細なオプション
+バッチファイルを指定している場合は反映されません
 #### Javaのパスの指定
 サーバーを起動する際のJavaのパスを指定します  
 指定していなかった場合、自動検出されたJavaが使用されます  
