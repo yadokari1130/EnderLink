@@ -253,7 +253,10 @@ export default defineComponent({
     },
     async selectPath() {
       const result = await window.file.selectPath()
-      if (result !== undefined) this.path = result[0]
+      if (result !== undefined) {
+        this.path = result[0]
+        this.jarPath = ""
+      }
     },
     async fetchAllRepository() {
       this.repositories = []
@@ -337,11 +340,11 @@ export default defineComponent({
       if (!selected) return
       let dirname = window.file.dirname(selected[0])
       if (dirname !== this.path) {
-        this.setError("サーバーフォルダ内にあるjarファイルを選択してください")
+        this.setError("サーバーフォルダ内にあるファイルを選択してください")
         return
       }
-      if (!selected[0].endsWith(".jar")) {
-        this.setError("jarファイルを選択してください")
+      if (!selected[0].endsWith(".jar") && !selected[0].endsWith(".bat")) {
+        this.setError("jarファイルかbatファイルを選択してください")
         return
       }
 
@@ -659,6 +662,7 @@ export default defineComponent({
                     variant="outlined"
                     @change="maxMem = Math.max(minMem + 1, maxMem)"
                     hide-details
+                    :disabled="jarPath.endsWith('.bat')"
                 />
               </v-col>
               <v-col cols="6">
@@ -670,6 +674,7 @@ export default defineComponent({
                     variant="outlined"
                     @change="() => {minMem = Math.max(0, minMem); maxMem = Math.max(minMem, maxMem)}"
                     hide-details
+                    :disabled="jarPath.endsWith('.bat')"
                 />
               </v-col>
             </v-row>
@@ -684,7 +689,7 @@ export default defineComponent({
                     size="large"
                     @click="selectJar"
                     :disabled="!path"
-                >jarを選択</v-btn>
+                >jar/batを選択</v-btn>
               </v-col>
             </v-row>
             <v-expansion-panels variant="accordion" class="mt-6 mb-3 border-opacity-25 border rounded" flat>
@@ -701,6 +706,7 @@ export default defineComponent({
                           clearable
                           persistent-clear
                           v-model="javaPath"
+                          :disabled="jarPath.endsWith('.bat')"
                       >
                         <template v-slot:append>
                           <v-btn
@@ -719,6 +725,7 @@ export default defineComponent({
                           label="JVMの引数"
                           v-model="args"
                           hide-details
+                          :disabled="jarPath.endsWith('.bat')"
                       />
                     </v-col>
                   </v-row>
@@ -734,6 +741,7 @@ export default defineComponent({
                     variant="outlined"
                     v-model="server"
                     :items="repositories.map(r => ({title: r.full_name, value: r}))"
+                    @="jarPath = ''"
                 >
                   <template v-slot:append>
                     <v-btn
@@ -765,6 +773,7 @@ export default defineComponent({
                     variant="outlined"
                     @change="maxMem = Math.max(minMem + 1, maxMem)"
                     hide-details
+                    :disabled="jarPath.endsWith('.bat')"
                 />
               </v-col>
               <v-col cols="6">
@@ -776,15 +785,16 @@ export default defineComponent({
                     variant="outlined"
                     @change="() => {minMem = Math.max(0, minMem); maxMem = Math.max(minMem, maxMem)}"
                     hide-details
+                    :disabled="jarPath.endsWith('.bat')"
                 />
               </v-col>
             </v-row>
             <v-row>
               <v-col cols="12">
                 <v-select
-                    label="jarを選択"
+                    label="jar/batを選択"
                     variant="outlined"
-                    :items="serverFiles.filter(f => f.endsWith('.jar'))"
+                    :items="serverFiles.filter(f => f.endsWith('.jar') || f.endsWith('.bat'))"
                     hide-details
                     v-model="jarPath"
                 />
@@ -805,6 +815,7 @@ export default defineComponent({
                           clearable
                           persistent-clear
                           v-model="javaPath"
+                          :disabled="jarPath.endsWith('.bat')"
                       >
                         <template v-slot:append>
                           <v-btn
@@ -823,6 +834,7 @@ export default defineComponent({
                           label="JVMの引数"
                           v-model="args"
                           hide-details
+                          :disabled="jarPath.endsWith('.bat')"
                       />
                     </v-col>
                   </v-row>

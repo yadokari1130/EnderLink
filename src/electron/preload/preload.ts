@@ -125,8 +125,8 @@ contextBridge.exposeInMainWorld("cloudflared", {
   setUseCloudflared: (useCloudflared: boolean) => ipcRenderer.invoke("store:set", {key: "useCloudflared", value: useCloudflared}),
   tunnel: async (port: string) => {
     tunnelData = tunnel({"--url": `tcp://localhost:${port}`})
-    // tunnelData?.child?.stdout?.on("data", (data: string) => console.log(Buffer.from(data, "utf-8").toString()))
-    // tunnelData?.child?.stderr?.on("data", (data: string) => console.log(Buffer.from(data, "utf-8").toString()))
+    tunnelData?.child?.stdout?.on("data", (data: string) => console.log(Buffer.from(data, "utf-8").toString()))
+    tunnelData?.child?.stderr?.on("data", (data: string) => console.log(Buffer.from(data, "utf-8").toString()))
     await Promise.all(tunnelData.connections)
     return await tunnelData.url
   },
@@ -134,8 +134,8 @@ contextBridge.exposeInMainWorld("cloudflared", {
   closeTunnel: () => tunnelData?.stop(),
   access: (url: string) => {
     accessProc = child_process.spawn(bin, ["access", "tcp", "--hostname", url, "--url", "localhost:25565"])
-    // accessProc?.stdout.on("data", (data: string) => console.log(Buffer.from(data, "utf-8").toString()))
-    // accessProc?.stderr.on("data", (data: string) => console.log(Buffer.from(data, "utf-8").toString()))
+    accessProc?.stdout.on("data", (data: string) => console.log(Buffer.from(data, "utf-8").toString()))
+    accessProc?.stderr.on("data", (data: string) => console.log(Buffer.from(data, "utf-8").toString()))
   },
   closeAccess: () => {
     accessProc?.kill()

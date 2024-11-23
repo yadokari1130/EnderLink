@@ -77,6 +77,14 @@ export default defineComponent({
             this.ip = res.data.ip
           })
     }
+  },
+  watch: {
+    "runningStore.log": function() {
+      if (this.runningStore.log.endsWith("Press any key to continue . . . ")) {
+        this.command = "quit"
+        this.sendCommand()
+      }
+    }
   }
 })
 </script>

@@ -115,11 +115,16 @@ export const useRunningStore = defineStore("running", {
             this.serverData = serverData
             this.icon = icon
 
-            let command = `"${serverData.javaPath || "java"}"`
-            command += ` -Xmx${serverData.maxMem}M -Xms${serverData.minMem}M `
-            command += this.serverData.args
-            command += ` -jar "${serverData.jarPath}"`
-            command += " nogui"
+            let command = window.shell.getPlatform() === "win32" ? "chcp 65001>nul && " : ""
+
+            if (serverData.jarPath.endsWith(".jar")) {
+                command += `"${serverData.javaPath || "java"}"`
+                command += ` -Xmx${serverData.maxMem}M -Xms${serverData.minMem}M -Dfile.encoding=UTF-8 `
+                command += this.serverData.args
+                command += ` -jar "${serverData.jarPath}"`
+                command += " nogui"
+            }
+            else if (serverData.jarPath.endsWith(".bat")) command += serverData.jarPath
 
             console.log(command)
 

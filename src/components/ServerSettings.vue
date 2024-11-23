@@ -495,11 +495,11 @@ export default defineComponent({
       if (!selected) return
       let dirname = window.file.dirname(selected[0])
       if (dirname !== this.serverSettingsStore.serverData.path) {
-        this.setError("サーバーフォルダ内にあるjarファイルを選択してください")
+        this.setError("サーバーフォルダ内にあるファイルを選択してください")
         return
       }
-      if (!selected[0].endsWith(".jar")) {
-        this.setError("jarファイルを選択してください")
+      if (!selected[0].endsWith(".jar") && !selected[0].endsWith(".bat")) {
+        this.setError("jarファイルかbatファイルを選択してください")
         return
       }
 
@@ -649,6 +649,7 @@ export default defineComponent({
                   variant="outlined"
                   @change="maxMem = Math.max(minMem + 1, maxMem)"
                   hide-details
+                  :disabled="jarPath.endsWith('.bat')"
               />
             </v-col>
             <v-col cols="6">
@@ -660,6 +661,7 @@ export default defineComponent({
                   variant="outlined"
                   @change="() => {minMem = Math.max(0, minMem); maxMem = Math.max(minMem, maxMem)}"
                   hide-details
+                  :disabled="jarPath.endsWith('.bat')"
               />
             </v-col>
           </v-row>
@@ -674,7 +676,7 @@ export default defineComponent({
                   color="primary"
                   size="large"
                   @click="selectJar"
-              >jarを選択</v-btn>
+              >jar/batを選択</v-btn>
             </v-col>
           </v-row>
           <v-row>
@@ -720,6 +722,7 @@ export default defineComponent({
                         clearable
                         persistent-clear
                         v-model="javaPath"
+                        :disabled="jarPath.endsWith('.bat')"
                     >
                       <template v-slot:append>
                         <v-btn
@@ -738,6 +741,7 @@ export default defineComponent({
                         label="JVMの引数"
                         v-model="args"
                         hide-details
+                        :disabled="jarPath.endsWith('.bat')"
                     />
                   </v-col>
                 </v-row>
