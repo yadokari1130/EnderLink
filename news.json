@@ -1,5 +1,5 @@
 {
-	"latest": "2024-06-09-21-50",
+	"latest": "2024-11-26-22-25",
 	"2024-05-28-22-04": {
 		"id": "2024-05-28-22-04",
 		"content": "<p>β0.0.1を公開しました。以前のバージョンで作成したサーバーは正常に動作しないため、一度PCから削除し、GitHubからインポートでもう一度追加しなおしてください。</p><p>詳しくはこちら<span class='link'>https://github.com/yadokari1130/EnderLink/releases/tag/v0.0.1-beta</span></p>",
@@ -8,6 +8,11 @@
 	"2024-06-09-21-50": {
 		"id": "2024-06-09-21-50",
 		"content": "<p>EnderLinkのご利用ありがとうございます！#EnderLinkのハッシュタグを付けてぜひ感想や機能要望などをツイートしてください！</p><p>リンクでツイート: <span class='link'>https://twitter.com/share?hashtags=EnderLink</span></p>",
+		"next": "2024-11-26-22-25"
+	},
+	"2024-11-26-22-25": {
+		"id": "2024-11-26-22-25",
+		"content": "<p>Forgeでポート開放不要機能を使う場合、Minecraft内ではlocalhostではなく127.0.0.1に接続してください</p>",
 		"next": null
 	}
 }

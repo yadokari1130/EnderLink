@@ -42,7 +42,7 @@ export default defineComponent({
         return
       }
 
-      this.setSnackbar("接続しました\nMinecraft内で「localhost」と入力するとサーバーに接続することができます")
+      this.setSnackbar("接続しました\nMinecraft内で「127.0.0.1」と入力するとサーバーに接続することができます")
     },
     closeAccess() {
       this.setOverlay("切断中")

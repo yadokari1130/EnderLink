@@ -114,7 +114,7 @@ export default defineComponent({
     async installAmazonCorretto() {
       this.term = new Terminal()
       this.$refs.terminal.innerHTML = ""
-      window.command.spawn(`winget install --id Amazon.Corretto.${this.javaVersion} -e --source winget`, ".",
+      window.command.spawn(`winget install --id Amazon.Corretto.${this.javaVersion}.JDK -e --source winget`, ".",
           data => {
             this.term.write(data)
             console.log(data)

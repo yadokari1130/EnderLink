@@ -1,7 +1,7 @@
 {
   "name": "enderlink",
   "private": true,
-  "version": "1.0.4",
+  "version": "1.0.5",
   "author": "yadokari1130",
   "main": "dist/electron/main/main.js",
   "scripts": {
