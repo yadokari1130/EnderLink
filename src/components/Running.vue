@@ -23,12 +23,20 @@ export default defineComponent({
     snackbarMessage: "",
     port: "",
     ip: "",
-    killDialog: false
+    killDialog: false,
+    overlay: false,
+    overlayMessage: "",
+    overlayColor: "",
   }),
   methods: {
     setError(errorMessage: string) {
       this.errorMessage = `エラーが発生しました${errorMessage ? "\n" + errorMessage : ""}`
       this.errorSnackbar = true
+      this.overlay = false
+    },
+    setOverlay(message: string) {
+      this.overlay = true
+      this.overlayMessage = message
     },
     sendCommand() {
       try {
@@ -43,7 +51,8 @@ export default defineComponent({
       this.command = ""
     },
     kill() {
-      window.command.kill()
+      this.killDialog = false
+      window.command.killAllProcesses()
     },
     copy() {
       navigator.clipboard.writeText(this.runningStore.url || `${this.ip}:${this.port}`)
@@ -80,9 +89,32 @@ export default defineComponent({
   },
   watch: {
     "runningStore.log": function() {
+      const scrollHeight = this.$refs.serverLog.scrollHeight
+      const clientHeight = this.$refs.serverLog.clientHeight
+      const scrollTop = this.$refs.serverLog.scrollTop
+
+      if (Math.abs(scrollHeight - clientHeight - scrollTop) < 30) {
+        setTimeout(() => {
+          this.$refs.serverLog.scrollTo({
+            top: scrollHeight + 1000,
+            behavior: "instant",
+          })
+        }, 50)
+      }
+
       if (this.runningStore.log.endsWith("Press any key to continue . . . ")) {
         this.command = "quit"
         this.sendCommand()
+      }
+    },
+    "runningStore.status": function() {
+      if (this.runningStore.status === "終了中") {
+        this.overlayColor = "red"
+        this.setOverlay("終了中です\nPCの電源を切ったり、\nEnderLinkを終了したりしないでください")
+      }
+      else {
+        this.overlayColor = ""
+        this.overlay = false
       }
     }
   }
@@ -110,6 +142,7 @@ export default defineComponent({
         variant="outlined"
         rows="15"
         v-model="runningStore.log"
+        ref="serverLog"
     />
     <v-text-field
         v-model="command"
@@ -138,6 +171,26 @@ export default defineComponent({
     </v-tooltip>
   </div>
   <h1 v-else>起動中のサーバーなし</h1>
+
+  <v-overlay
+      :model-value="overlay"
+      class="align-center justify-center"
+      persistent
+      opacity="0.7"
+  >
+    <v-progress-circular
+        width="8"
+        :color="overlayColor || 'blue-lighten-2'"
+        size="400"
+        indeterminate
+    >
+      <template v-slot:default>
+        <div style="white-space: pre-wrap; font-weight: bold">
+          {{ overlayMessage }}
+        </div>
+      </template>
+    </v-progress-circular>
+  </v-overlay>
 
   <v-snackbar
       v-model="errorSnackbar"
@@ -196,7 +249,7 @@ export default defineComponent({
             @click="kill"
             size="large"
             color="red"
-        >削除</v-btn>
+        >強制終了</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

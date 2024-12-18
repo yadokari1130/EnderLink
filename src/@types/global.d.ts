@@ -107,6 +107,7 @@ export interface ICommand {
     spawnSync: (command: string) => [string, string, number | null]
     write: (command: string) => void
     kill: () => void
+    killAllProcesses: () => void
 }
 
 export interface IGit {

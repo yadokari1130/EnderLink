@@ -14,6 +14,7 @@ import StreamZip from "node-stream-zip"
 import { Connection, install, bin, tunnel } from "cloudflared"
 import { ChildProcess } from "child_process";
 import sharp from "sharp";
+import ps_tree from "ps-tree";
 
 let proc: child_process.ChildProcessWithoutNullStreams | null = null
 let listener: Listener | null = null
@@ -184,8 +185,23 @@ contextBridge.exposeInMainWorld("command", {
     proc?.stdin.write(command + "\n")
   },
   kill: () => {
-    proc?.kill(1)
+    proc?.kill()
   },
+  killAllProcesses: () => {
+    if (proc?.pid) {
+      ps_tree(proc.pid, (error: Error | null, children: readonly ps_tree.PS[]) => {
+        children.forEach((child: ps_tree.PS) => {
+          console.log(child.PID)
+          try {
+            process.kill(Number(child.PID))
+          }
+          catch (error) {
+            console.log(error)
+          }
+        })
+      })
+    }
+  }
 })
 
 contextBridge.exposeInMainWorld("git", {
