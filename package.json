@@ -53,6 +53,7 @@
   },
   "dependencies": {
     "@electron/rebuild": "^3.6.0",
+    "@img/sharp-win32-x64": "^0.34.4",
     "@mdi/font": "^7.4.47",
     "@ngrok/ngrok": "^1.2.0",
     "@octokit/request-error": "^6.0.2",
@@ -89,7 +90,7 @@
     "vue-tsc": "^0.34.7"
   },
   "engines": {
-    "node": "20.12.1"
+    "node": "22.20.0"
   },
   "resolutions": {
     "@types/mime": "3.0.4"
