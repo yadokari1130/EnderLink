@@ -6,7 +6,7 @@ import {autoUpdater} from "electron-updater";
 import * as http from "http";
 import axios from "axios";
 import * as path from "path";
-import ps_tree from "ps-tree";
+import * as child_process from "node:child_process";
 
 interface StoreType {
     access_token: Buffer | undefined,
@@ -136,16 +136,14 @@ app.whenReady().then(() => {
 });
 
 function killAllProcesses() {
-    ps_tree(process.pid, (error: Error | null, children: readonly ps_tree.PS[]) => {
-        children.forEach((child: ps_tree.PS) => {
-            console.log(child.PID)
-            try {
-                process.kill(Number(child.PID))
-            }
-            catch (error) {
-                console.log(error)
-            }
-        })
+    getChildrenPIDs(process.pid).forEach(pid => {
+        console.log(pid)
+        try {
+            process.kill(pid)
+        }
+        catch (error) {
+            console.log(error)
+        }
     })
 }
 app.on("quit", killAllProcesses)
@@ -213,6 +211,14 @@ function setAccessToken(accessToken: string) {
 
 function logout() {
     store.delete("access_token")
+}
+
+function getChildrenPIDs(pid: string | number) {
+  const command = process.platform === "win32" ?
+    `powershell.exe -Command "Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq ${pid} } | Select-Object -ExpandProperty ProcessId"` :
+    `pgrep -P ${pid}`
+
+  return child_process.execSync(command).toString().split("\n").filter(pid => pid).map(pid => Number(pid))
 }
 
 function getNgrokToken() {

@@ -14,7 +14,6 @@ import StreamZip from "node-stream-zip"
 import { Connection, install, bin, tunnel } from "cloudflared"
 import { ChildProcess } from "child_process";
 import sharp from "sharp";
-import ps_tree from "ps-tree";
 
 let proc: child_process.ChildProcessWithoutNullStreams | null = null
 let listener: Listener | null = null
@@ -163,6 +162,14 @@ contextBridge.exposeInMainWorld("win", {
   focusWin: () => ipcRenderer.invoke("win:focusWin")
 })
 
+function getChildrenPIDs(pid: string | number) {
+  const command = process.platform === "win32" ?
+    `powershell.exe -Command "Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq ${pid} } | Select-Object -ExpandProperty ProcessId"` :
+    `pgrep -P ${pid}`
+
+  return child_process.execSync(command).toString().split("\n").filter(pid => pid).map(pid => Number(pid))
+}
+
 contextBridge.exposeInMainWorld("command", {
   execSync: (command: string) => execSync(command).toString(),
   exec: (command: string, onOut: (error: child_process.ExecException | null, stdout: string, stderr: string) => void) => exec(command, onOut),
@@ -188,19 +195,17 @@ contextBridge.exposeInMainWorld("command", {
     proc?.kill()
   },
   killAllProcesses: () => {
-    if (proc?.pid) {
-      ps_tree(proc.pid, (error: Error | null, children: readonly ps_tree.PS[]) => {
-        children.forEach((child: ps_tree.PS) => {
-          console.log(child.PID)
-          try {
-            process.kill(Number(child.PID))
-          }
-          catch (error) {
-            console.log(error)
-          }
-        })
-      })
-    }
+    if (!proc?.pid) return
+
+    getChildrenPIDs(proc?.pid).forEach((pid) => {
+      console.log(pid)
+      try {
+        process.kill(pid)
+      }
+      catch (error) {
+        console.log(error)
+      }
+    })
   }
 })
 

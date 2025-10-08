@@ -1,7 +1,7 @@
 {
   "name": "enderlink",
   "private": true,
-  "version": "1.0.6",
+  "version": "1.0.7",
   "author": "yadokari1130",
   "main": "dist/electron/main/main.js",
   "scripts": {
@@ -72,7 +72,6 @@
     "fs-extra": "^11.2.0",
     "node-stream-zip": "^1.15.0",
     "prismarine-nbt": "^2.5.0",
-    "ps-tree": "^1.2.0",
     "sharp": "^0.33.4",
     "simple-git": "^3.23.0",
     "vue": "^3.2.25",
